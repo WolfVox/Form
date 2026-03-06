@@ -12,7 +12,7 @@
             --bg: #060608;
             --card: #161618;
             --border: #2d2d30;
-            --accent: #00a2ff;
+            --accent: #7a6cff;
             --text-main: #eeeeee;
             --text-dim: #a1a1aa;
         }
@@ -25,32 +25,32 @@
         body { 
             background-color: var(--bg); 
             color: var(--text-main); 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Inter', -apple-system, sans-serif;
             margin: 0;
             display: flex;
             justify-content: center;
         }
 
-        /* Layout Architecture */
         .main-wrapper {
             display: flex;
             width: 100%;
-            max-width: 1200px;
+            max-width: 1100px;
             margin: 40px 20px;
             gap: 24px;
         }
 
-        /* Center Content Column */
+        /* Content Column */
         .content-area {
             flex: 3;
             background: var(--card);
             border: 1px solid var(--border);
             border-radius: 8px;
-            padding: 45px;
+            padding: 40px;
             box-shadow: 0 4px 30px rgba(0,0,0,0.5);
+            min-height: 600px;
         }
 
-        /* Sticky Right Sidebar */
+        /* Sidebar */
         .sidebar {
             flex: 1;
             position: sticky;
@@ -74,10 +74,11 @@
             font-size: 16px;
             color: #d1d1d1;
         }
+        
         .post-body img { 
             max-width: 100%; 
             border-radius: 8px; 
-            margin: 25px 0; 
+            margin: 20px 0; 
             border: 1px solid var(--border);
         }
 
@@ -89,7 +90,7 @@
         }
         .author-box img {
             border-radius: 50%;
-            border: 2px solid var(--accent);
+            border: 1px solid var(--border);
         }
 
         .btn-action {
@@ -99,12 +100,15 @@
             background: transparent;
             border: 1px solid var(--border);
             color: white;
-            border-radius: 4px;
+            border-radius: 6px;
             cursor: pointer;
             font-weight: 600;
-            transition: 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
         }
-        .btn-action:hover { background: var(--border); border-color: var(--accent); }
+        .btn-action:hover { background: #222; border-color: var(--accent); }
 
         @media (max-width: 900px) {
             .main-wrapper { flex-direction: column; }
@@ -117,15 +121,18 @@
 <div class="main-wrapper">
     <div class="content-area">
         <div class="breadcrumb">
-            <a href="https://wolfvox.github.io/Forms/">Home</a> 
+            <a href="https://wolfvox.github.io/Forms/">WolfVox Hub</a> 
             <i class="fa-solid fa-chevron-right" style="font-size: 10px; margin: 0 8px;"></i> 
             <span id="b-title">Loading...</span>
         </div>
 
-        <h1 id="f-title" style="font-size: 34px; margin-bottom: 20px; color: #fff;">---</h1>
+        <h1 id="f-title" style="font-size: 32px; margin-bottom: 20px; color: #fff;">---</h1>
         
         <div id="f-body" class="post-body">
-            <p>Fetching content from WolfVox API...</p>
+            <div style="padding: 40px; text-align: center;">
+                <i class="fa-solid fa-spinner fa-spin" style="font-size: 30px; color: var(--accent);"></i>
+                <p>Retrieving database entries...</p>
+            </div>
         </div>
     </div>
 
@@ -135,15 +142,16 @@
         
         <hr style="border: 0; border-top: 1px solid var(--border); margin: 20px 0;">
         
-        <div style="font-size: 13px; color: var(--text-dim);">
-            <p><i class="fa-solid fa-calendar-days"></i> Posted: <span id="f-date">--</span></p>
-            <p><i class="fa-solid fa-heart"></i> Appreciation: <span id="f-likes">0</span></p>
+        <div style="font-size: 13px; color: var(--text-dim); line-height: 2;">
+            <div><i class="fa-solid fa-calendar-days"></i> Posted: <span id="f-date">--</span></div>
+            <div><i class="fa-solid fa-heart"></i> Appreciation: <span id="f-likes">0</span></div>
+            <div id="f-verify-status"></div>
         </div>
 
-        <button class="btn-action" onclick="alert('Visit the main site to interact!')">
+        <button class="btn-action" onclick="alert('Open the Search Hub to interact!')">
             <i class="fa-solid fa-thumbs-up"></i> Like Post
         </button>
-        <button class="btn-action" style="color: #ff4d4d;" onclick="alert('Report submitted to WolfVox Moderation.')">
+        <button class="btn-action" style="color: #ff4d4d; border-color: rgba(255,77,77,0.2);" onclick="alert('Moderation report sent.')">
             <i class="fa-solid fa-flag"></i> Report
         </button>
     </div>
@@ -153,38 +161,72 @@
     const API = "https://backhand-forms.onrender.com/api/forms";
     const urlParams = new URLSearchParams(window.location.search);
     const formID = urlParams.get('id');
-    
-async function loadPost() {
-    const urlParams = new URLSearchParams(window.location.search);
-    const formID = urlParams.get('id');
 
-    if (!formID) {
-        document.getElementById('f-body').innerHTML = "<h2>Error: No ID found.</h2>";
-        return;
-    }
-
-    try {
-        const res = await fetch(API);
-        const data = await res.json();
-
-        // Match using the email-prefix + clean-title logic
-        const form = data.find(f => {
-            const emailUser = f.authorEmail ? f.authorEmail.split('@')[0] : 'anonymous';
-            const cleanTitle = f.title.replace(/[^a-zA-Z0-9]/g, '');
-            return `${emailUser}+${cleanTitle}` === formID;
-        });
-
-        if (form) {
-            // ... (Your code to display the title, body, and author) ...
-            document.getElementById('f-title').innerText = form.title;
-            document.getElementById('f-body').innerHTML = form.content;
-        } else {
-            document.getElementById('f-body').innerHTML = "<h2>Form Not Found</h2><p>This post may have been deleted.</p>";
+    async function loadPost() {
+        if (!formID) {
+            document.getElementById('f-body').innerHTML = "<h2>Error: Missing URL Parameter</h2><p>No Form ID was provided.</p>";
+            return;
         }
-    } catch (e) {
-        document.getElementById('f-body').innerHTML = "<h2>Server Error</h2>";
+
+        try {
+            const res = await fetch(API);
+            const data = await res.json();
+
+            // MATCHING LOGIC (Must match Hub precisely)
+            const form = data.find(f => {
+                const emailUser = f.authorEmail ? f.authorEmail.split('@')[0] : 'anonymous';
+                const cleanTitle = f.title.replace(/[^a-zA-Z0-9]/g, '');
+                const generatedID = `${emailUser}+${cleanTitle}`;
+                return generatedID === formID;
+            });
+
+            if (form) {
+                // Set metadata
+                document.title = `${form.title} | WolfVox`;
+                document.getElementById('b-title').innerText = form.title;
+                document.getElementById('f-title').innerText = form.title;
+                document.getElementById('f-body').innerHTML = form.content;
+                document.getElementById('f-date').innerText = form.date || "Recently";
+                document.getElementById('f-likes').innerText = form.likes || 0;
+
+                // Image handling
+                if (form.image) {
+                    const imgTag = `<img src="${form.image}" alt="Post Image">`;
+                    document.getElementById('f-body').innerHTML += imgTag;
+                }
+
+                // Sidebar Author Display
+                document.getElementById('author-info').innerHTML = `
+                    <img src="${form.authorImg || 'https://ui-avatars.com/api/?name=' + form.authorName}" width="45" height="45">
+                    <div>
+                        <div style="font-weight: 700; color:#fff;">${form.authorName}</div>
+                        <div style="font-size: 11px; color: var(--accent);">@${form.authorEmail.split('@')[0]}</div>
+                    </div>
+                `;
+
+                // Handle Google Verification Tag injection
+                if (form.googleVerify) {
+                    let meta = document.createElement('meta');
+                    meta.name = "google-site-verification";
+                    meta.content = form.googleVerify;
+                    document.head.appendChild(meta);
+                    document.getElementById('f-verify-status').innerHTML = `<i class="fa-solid fa-shield-check" style="color:#00d1b2"></i> Google Verified`;
+                }
+
+            } else {
+                // ID exists in URL but not in the database
+                document.getElementById('f-body').innerHTML = `
+                    <div style="text-align:center; padding:60px; color:var(--text-dim);">
+                        <i class="fa-solid fa-ghost" style="font-size:40px; margin-bottom:20px; opacity:0.3;"></i>
+                        <h2>Form Not Found</h2>
+                        <p>This post may have been deleted or the ID <b>${formID}</b> is incorrect.</p>
+                        <a href="https://wolfvox.github.io/Forms/" style="color:var(--accent); text-decoration:none; font-weight:600;">← Back to Hub</a>
+                    </div>`;
+            }
+        } catch (e) {
+            document.getElementById('f-body').innerHTML = `<div style="text-align:center; color:coral;"><h2>Offline</h2><p>Could not connect to WolfVox Database.</p></div>`;
+        }
     }
-}
 
     loadPost();
 </script>
