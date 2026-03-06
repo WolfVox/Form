@@ -158,68 +158,80 @@
 </div>
 
 <script>
-    const API = "https://backhand-forms.onrender.com/api/forms";
-    const urlParams = new URLSearchParams(window.location.search);
-    const formID = urlParams.get('id');
+const API = "https://backhand-forms.onrender.com/api/forms";
+const urlParams = new URLSearchParams(window.location.search);
+const formID = urlParams.get('id');
+let currentForm = null; // Stores the form data globally for the Like button
 
 async function loadPost() {
-    const urlParams = new URLSearchParams(window.location.search);
-    const formID = urlParams.get('id'); // This gets "masvoxco-wooow12409q"
-
-    if (!formID) {
-        document.getElementById('f-body').innerHTML = "<h2>Error: No ID.</h2>";
-        return;
-    }
-
     try {
         const res = await fetch(API);
+        if (!res.ok) throw new Error("Server not responding");
         const data = await res.json();
 
-        // THE MATCHING ENGINE
-        const form = data.find(f => {
+        // MATCHING LOGIC
+        currentForm = data.find(f => {
             const emailUser = f.authorEmail ? f.authorEmail.split('@')[0].toLowerCase() : 'anonymous';
-            const cleanTitle = f.title.toLowerCase()
-                .replace(/[^a-z0-9\s]/g, '')
-                .replace(/\s+/g, '-');
-            
-            const generatedID = `${emailUser}-${cleanTitle}`;
-            
-            // Compare the ID from the URL with the one we just built from the DB item
-            return generatedID === formID.toLowerCase();
+            const cleanTitle = f.title.toLowerCase().replace(/[^a-z0-9]/g, '');
+            return `${emailUser}-${cleanTitle}` === formID.toLowerCase().replace(/\s+/g, '-');
         });
 
-        if (form) {
-            // SUCCESS: Inject data
-            document.getElementById('b-title').innerText = form.title;
-            document.getElementById('f-title').innerText = form.title;
-            document.getElementById('f-body').innerHTML = form.content;
-            document.getElementById('f-date').innerText = form.date || "Recently";
-            document.getElementById('f-likes').innerText = form.likes || 0;
+        if (currentForm) {
+            document.getElementById('f-title').innerText = currentForm.title;
+            document.getElementById('f-body').innerHTML = currentForm.content;
+            document.getElementById('f-date').innerText = currentForm.date || "Today";
+            document.getElementById('f-likes').innerText = currentForm.likes || 0;
             
             // Sidebar Update
             document.getElementById('author-info').innerHTML = `
-                <img src="${form.authorImg}" width="45" height="45" style="border-radius:50%">
+                <img src="${currentForm.authorImg}" width="45" height="45" style="border-radius:50%">
                 <div>
-                    <div style="font-weight:700;">${form.authorName}</div>
-                    <div style="font-size:11px; color:var(--accent);">@${emailUser}</div>
+                    <div style="font-weight:700;">${currentForm.authorName}</div>
+                    <div style="font-size:11px; color:var(--accent);">@${currentForm.authorEmail.split('@')[0]}</div>
                 </div>`;
         } else {
-            // FAILURE: Log the comparison to console to see why it failed
-            console.log("URL ID:", formID);
-            document.getElementById('f-body').innerHTML = `
-                <div style="text-align:center; padding:50px;">
-                    <h2>Form Not Found</h2>
-                    <p>We checked ${data.length} posts but none matched your ID.</p>
-                    <p>ID Attempted: <code style="background:#000; padding:5px; border-radius:4px;">${formID}</code></p>
-                    <a href="https://wolfvox.github.io/Forms/" style="color:var(--accent);">Try searching again</a>
-                </div>`;
+            document.getElementById('f-body').innerHTML = "<h2>Form Not Found</h2>";
         }
     } catch (e) {
-        document.getElementById('f-body').innerHTML = "<h2>Server Connection Failed</h2>";
+        document.getElementById('f-body').innerHTML = `<h2 style="color:coral;">Server Connection Failed</h2><p>The backend is waking up. Please refresh in 30 seconds.</p>`;
     }
 }
 
-    loadPost();
+// INTERACTION LOGIC (Like / Report)
+async function interact(type) {
+    const user = JSON.parse(localStorage.getItem('wv_user'));
+    if (!user) return alert("Please sign in on the WolfVox Hub to like posts!");
+    if (!currentForm) return;
+
+    try {
+        const response = await fetch(`${API}/interact`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                title: currentForm.title,
+                authorEmail: currentForm.authorEmail,
+                voterEmail: user.email,
+                type: type
+            })
+        });
+
+        const result = await response.json();
+        if (result.success) {
+            if (type === 'like') {
+                document.getElementById('f-likes').innerText = parseInt(document.getElementById('f-likes').innerText) + 1;
+                alert("Liked!");
+            } else {
+                alert("Reported to Moderation.");
+            }
+        } else {
+            alert(result.message || "You already interacted with this.");
+        }
+    } catch (e) {
+        alert("Interaction failed. Server might be offline.");
+    }
+}
+
+loadPost();
 </script>
 
 </body>
