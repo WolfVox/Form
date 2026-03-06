@@ -3,90 +3,120 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WolfVox | Viewer</title>
+    <title>WolfVox™ | Viewer</title>
     <link rel="icon" type="image/x-icon" href="https://github.com/WolfVox/wolfvox.github.io/blob/main/WolfVoxLogo.png?raw=true">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     
     <style>
         :root {
             --bg: #060608;
-            --card: #161618;
+            --header: #111113;
+            --card-bg: #161618;
             --border: #2d2d30;
             --accent: #7a6cff;
             --text-main: #eeeeee;
             --text-dim: #a1a1aa;
+            --render-green: #00d1b2;
+            --error: #ff4d4d;
         }
 
-        body { 
-            background-color: var(--bg); color: var(--text-main); 
-            font-family: 'Inter', sans-serif; margin: 0; display: flex; justify-content: center;
-        }
-
-        .main-wrapper {
-            display: flex; width: 100%; max-width: 1100px; margin: 40px 20px; gap: 24px;
-        }
-
-        .content-area {
-            flex: 3; background: var(--card); border: 1px solid var(--border);
-            border-radius: 8px; padding: 40px; min-height: 600px;
-        }
-
-        .sidebar {
-            flex: 1; position: sticky; top: 20px; height: fit-content;
-            background: var(--card); border: 1px solid var(--border);
-            padding: 25px; border-radius: 8px;
-        }
-
-        .rich-text img { max-width: 100%; border-radius: 8px; margin: 20px 0; border: 1px solid var(--border); }
+        * { box-sizing: border-box; font-family: 'Inter', -apple-system, sans-serif; transition: all 0.15s ease; }
         
-        .video-container {
-            margin-top: 20px; position: relative; padding-bottom: 56.25%;
-            height: 0; overflow: hidden; border-radius: 8px;
+        body { 
+            background-color: var(--bg); 
+            background-image: linear-gradient(var(--border) 1px, transparent 1px), linear-gradient(90deg, var(--border) 1px, transparent 1px);
+            background-size: 60px 60px;
+            color: var(--text-main); margin: 0; 
         }
+
+        /* NAVIGATION */
+        nav {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 12px 30px; background: var(--header); border-bottom: 1px solid var(--border);
+            position: sticky; top: 0; z-index: 1000;
+        }
+
+        /* MAIN CONTENT AREA */
+        .container { max-width: 1100px; margin: 40px auto; padding: 0 20px; display: flex; gap: 30px; }
+        
+        .main-content { 
+            flex: 3; background: var(--card-bg); border: 1px solid var(--border); 
+            border-radius: 12px; padding: 40px; overflow: hidden;
+        }
+
+        .sidebar { flex: 1; }
+        .sidebar-card { 
+            background: var(--card-bg); border: 1px solid var(--border); 
+            border-radius: 12px; padding: 25px; position: sticky; top: 85px;
+        }
+
+        /* RICH TEXT STYLING */
+        .post-body { line-height: 1.7; font-size: 16px; color: #d1d5db; }
+        .post-body img { max-width: 100%; border-radius: 8px; margin: 20px 0; border: 1px solid var(--border); }
+        .video-container { margin-top: 20px; position: relative; padding-bottom: 56.25%; height: 0; border-radius: 8px; overflow: hidden; }
         .video-container iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
 
-        .resource-box {
-            margin-top: 20px; padding: 15px; background: #000;
-            border-radius: 8px; border: 1px solid var(--border);
-            display: flex; justify-content: space-between; align-items: center;
-        }
-
+        /* GITHUB STYLE BUTTONS */
         .btn-action {
-            width: 100%; padding: 12px; margin-top: 10px; background: transparent;
-            border: 1px solid var(--border); color: white; border-radius: 6px;
+            width: 100%; padding: 12px; margin-top: 10px; background: #21262d; 
+            border: 1px solid var(--border); color: #c9d1d9; border-radius: 6px; 
             cursor: pointer; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 8px;
         }
-        .btn-action:hover { border-color: var(--accent); background: rgba(122, 108, 255, 0.1); }
+        .btn-action:hover { background: #30363d; border-color: #8b949e; }
+        .btn-accent { background: var(--accent); color: white; border: none; }
+        .btn-accent:hover { opacity: 0.9; transform: translateY(-2px); }
 
-        @media (max-width: 900px) { .main-wrapper { flex-direction: column; } }
+        /* RESOURCE BOXES */
+        .resource-box {
+            background: #0d1117; border: 1px solid var(--border); padding: 15px;
+            border-radius: 8px; margin-top: 20px; display: flex; align-items: center; justify-content: space-between;
+        }
+
+        footer { text-align: center; padding: 40px; color: var(--text-dim); font-size: 13px; background-color: #0f0f0f; border-top: 1px solid var(--border); margin-top: 100px; }
     </style>
 </head>
 <body>
 
-<div class="main-wrapper">
-    <div class="content-area">
-        <h1 id="f-title" style="font-size: 32px; margin-bottom: 20px;">Loading...</h1>
-        <div id="f-body" class="rich-text">
-            <i class="fa-solid fa-circle-notch fa-spin"></i> Fetching form data...
+<nav>
+    <h2 onclick="location.href='https://wolfvox.github.io/Forms/index.html'" style="font-size: 18px; margin:0; cursor:pointer;">
+        Wolf<span style="color:var(--accent)">Vox</span>
+    </h2>
+    <div style="font-size: 14px; color: var(--text-dim);">Form Viewer v2.0</div>
+</nav>
+
+<div class="container">
+    <div class="main-content">
+        <h1 id="f-title" style="margin-top:0; font-size: 32px;">Loading Form...</h1>
+        <div id="f-body" class="post-body">
+            <i class="fa-solid fa-spinner fa-spin"></i> Fetching from WolfVox Servers...
         </div>
     </div>
 
     <div class="sidebar">
-        <div id="author-info" style="display:flex; align-items:center; gap:12px; margin-bottom:20px;"></div>
-        <hr style="border: 0; border-top: 1px solid var(--border); margin: 20px 0;">
-        <div style="font-size: 13px; color: var(--text-dim); line-height: 2;">
-            <div><i class="fa-solid fa-calendar"></i> Posted: <span id="f-date">--</span></div>
-            <div><i class="fa-solid fa-heart"></i> Appreciation: <span id="f-likes">0</span></div>
-        </div>
+        <div class="sidebar-card">
+            <div id="author-info" style="display:flex; align-items:center; gap:12px; margin-bottom:20px;">
+                </div>
+            
+            <hr style="border:0; border-top:1px solid var(--border); margin:20px 0;">
+            
+            <div style="font-size: 13px; color: var(--text-dim); line-height: 2;">
+                <div><i class="fa-solid fa-calendar"></i> Posted: <span id="f-date">--</span></div>
+                <div><i class="fa-solid fa-heart" style="color:var(--error)"></i> Likes: <span id="f-likes">0</span></div>
+            </div>
 
-        <button class="btn-action" onclick="interact('like')">
-            <i class="fa-solid fa-thumbs-up"></i> Like Post
-        </button>
-        <button class="btn-action" style="color: #ff4d4d;" onclick="interact('report')">
-            <i class="fa-solid fa-flag"></i> Report
-        </button>
+            <button class="btn-action btn-accent" onclick="interact('like')" style="margin-top:20px;">
+                <i class="fa-solid fa-thumbs-up"></i> Like Post
+            </button>
+            <button class="btn-action" style="color: var(--error);" onclick="interact('report')">
+                <i class="fa-solid fa-flag"></i> Report
+            </button>
+        </div>
     </div>
 </div>
+
+<footer id="dynamic-footer">
+    &copy; 2026 WolfVoxCo. | Community Forms.
+</footer>
 
 <script>
     const API = "https://backhand-forms.onrender.com/api/forms";
@@ -94,10 +124,9 @@
     const formID = urlParams.get('id');
     let currentForm = null;
 
-    // --- 1. LOAD DATA ---
     async function loadPost() {
         if (!formID) {
-            document.getElementById('f-body').innerHTML = "<h2>Error: No ID provided.</h2>";
+            document.getElementById('f-body').innerHTML = "<h2>Error: Missing ID</h2>";
             return;
         }
 
@@ -105,7 +134,7 @@
             const res = await fetch(API);
             const data = await res.json();
 
-            // Find matching form using lowercase hyphen logic
+            // MATCHING ENGINE
             currentForm = data.find(f => {
                 const emailUser = f.authorEmail ? f.authorEmail.split('@')[0].toLowerCase() : 'anonymous';
                 const cleanTitle = f.title.toLowerCase().replace(/[^a-z0-9]/g, '');
@@ -119,61 +148,63 @@
                 document.getElementById('f-date').innerText = currentForm.date || "Today";
                 document.getElementById('f-likes').innerText = currentForm.likes || 0;
 
-                // Build HTML Content
-                let finalHTML = `<div style="margin-bottom:20px;">${currentForm.content}</div>`;
+                // BUILD BODY CONTENT
+                let contentHTML = `<div style="margin-bottom:30px;">${currentForm.content}</div>`;
 
-                // Handle Images (Array or Single)
-                const imgList = currentForm.images || (currentForm.image ? [currentForm.image] : []);
-                imgList.forEach(src => {
-                    if(src) finalHTML += `<img src="${src}" style="width:100%; margin-bottom:15px; border-radius:8px;">`;
+                // Render Images
+                const images = currentForm.images || (currentForm.image ? [currentForm.image] : []);
+                images.forEach(img => {
+                    if(img) contentHTML += `<img src="${img}" alt="content image">`;
                 });
 
-                // Handle Video
-                const vidList = currentForm.videos || (currentForm.video ? [currentForm.video] : []);
-                vidList.forEach(vidUrl => {
-                    let vID = vidUrl.includes("v=") ? vidUrl.split("v=")[1].split("&")[0] : vidUrl.split("/").pop();
-                    if(vID) finalHTML += `<div class="video-container"><iframe src="https://www.youtube.com/embed/${vID}" frameborder="0" allowfullscreen></iframe></div>`;
+                // Render Videos
+                const videos = currentForm.videos || (currentForm.video ? [currentForm.video] : []);
+                videos.forEach(vid => {
+                    let vID = vid.includes("v=") ? vid.split("v=")[1].split("&")[0] : vid.split("/").pop();
+                    if(vID) contentHTML += `<div class="video-container"><iframe src="https://www.youtube.com/embed/${vID}" frameborder="0" allowfullscreen></iframe></div>`;
                 });
 
-                // Handle Downloads/Links
-                if (currentForm.file) {
-                    finalHTML += `<div class="resource-box"><span><i class="fa-solid fa-file"></i> Main File</span><a href="${currentForm.file}" target="_blank" style="color:var(--accent); text-decoration:none;">Download</a></div>`;
+                // Render Files/Links
+                if (currentForm.file || currentForm.links) {
+                    contentHTML += `<h3 style="margin-top:40px; border-bottom:1px solid var(--border); padding-bottom:10px;">Attached Resources</h3>`;
+                    if (currentForm.file) {
+                        contentHTML += `<div class="resource-box"><span><i class="fa-solid fa-download"></i> Primary Download</span><a href="${currentForm.file}" target="_blank" style="color:var(--accent); text-decoration:none; font-weight:bold;">Get File</a></div>`;
+                    }
+                    if (currentForm.links) {
+                        currentForm.links.forEach(l => {
+                            contentHTML += `<div class="resource-box"><span><i class="fa-solid fa-link"></i> External Resource</span><a href="${l}" target="_blank" style="color:var(--accent); text-decoration:none;">Open Link</a></div>`;
+                        });
+                    }
                 }
 
-                document.getElementById('f-body').innerHTML = finalHTML;
+                document.getElementById('f-body').innerHTML = contentHTML;
 
-                // Sidebar Author
+                // AUTHOR INFO
                 document.getElementById('author-info').innerHTML = `
-                    <img src="${currentForm.authorImg || 'https://ui-avatars.com/api/?name=?'}" width="45" height="45" style="border-radius:50%; border:1px solid var(--accent);">
+                    <img src="${currentForm.authorImg}" width="48" height="48" style="border-radius:50%; border:2px solid var(--accent);">
                     <div>
-                        <div style="font-weight: 700;">${currentForm.authorName}</div>
-                        <div style="font-size: 11px; color: var(--accent);">@${currentForm.authorEmail.split('@')[0]}</div>
+                        <div style="font-weight: 700; color:white;">${currentForm.authorName}</div>
+                        <div style="font-size: 12px; color: var(--accent);">@${currentForm.authorEmail.split('@')[0]}</div>
                     </div>`;
+
+                // DYNAMIC FOOTER UPDATE
+                document.getElementById('dynamic-footer').innerHTML = `&copy; 2026 | ${currentForm.authorEmail} | Viewing: ${currentForm.title}`;
+
             } else {
-                document.getElementById('f-body').innerHTML = "<h2>Form Not Found</h2><p>ID: " + formID + "</p>";
+                document.getElementById('f-body').innerHTML = "<h2>Form Not Found</h2>";
             }
         } catch (e) {
-            document.getElementById('f-body').innerHTML = "<h2>Server Offline</h2>";
+            document.getElementById('f-body').innerHTML = "<h2 style='color:var(--error)'>Connection Error</h2><p>Check if the API is awake.</p>";
         }
     }
 
-    // --- 2. INTERACTION ENGINE ---
-    // (Defined in global scope so buttons can see it)
     async function interact(type) {
         const user = JSON.parse(localStorage.getItem('wv_user'));
-        
-        if (!user) {
-            alert("Please sign in on the Hub first!");
-            return;
-        }
-
-        if (!currentForm) {
-            alert("Post data is still loading...");
-            return;
-        }
+        if (!user) return alert("Sign in on the Hub to interact!");
+        if (!currentForm) return;
 
         try {
-            const response = await fetch(`${API}/interact`, {
+            const res = await fetch(`${API}/interact`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
@@ -183,25 +214,17 @@
                     type: type
                 })
             });
-
-            const result = await response.json();
+            const result = await res.json();
             if (result.success) {
-                if(type === 'like') {
+                if(type==='like') {
                     document.getElementById('f-likes').innerText = parseInt(document.getElementById('f-likes').innerText) + 1;
-                    alert("Liked!");
-                } else {
-                    alert("Reported.");
-                }
-            } else {
-                alert(result.message || "Already interacted.");
-            }
-        } catch (e) {
-            alert("Could not connect to server.");
-        }
+                    alert("Appreciated!");
+                } else alert("Reported to staff.");
+            } else alert(result.message);
+        } catch (e) { alert("Server error."); }
     }
 
     loadPost();
 </script>
-
 </body>
 </html>
