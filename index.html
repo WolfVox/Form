@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WolfVox | Loading Form...</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <style>
+        :root {
+            --bg: #060608;
+            --card: #161618;
+            --border: #2d2d30;
+            --accent: #00a2ff; /* Roblox Blue */
+            --text: #eeeeee;
+        }
+
+        /* Roblox-style Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: var(--bg); }
+        ::-webkit-scrollbar-thumb { background: #393b3d; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #4f5154; }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+        }
+
+        .main-wrapper {
+            display: flex;
+            width: 100%;
+            max-width: 1200px;
+            margin: 20px;
+            gap: 20px;
+        }
+
+        /* Center Content */
+        .content-area {
+            flex: 3;
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 40px;
+            min-height: 80vh;
+        }
+
+        /* Right Sidebar */
+        .sidebar {
+            flex: 1;
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 20px;
+            height: fit-content;
+            position: sticky;
+            top: 20px;
+        }
+
+        .author-card {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .comment-section {
+            margin-top: 40px;
+            border-top: 1px solid var(--border);
+            padding-top: 20px;
+        }
+
+        .chat-box {
+            background: #000;
+            border: 1px solid var(--border);
+            padding: 10px;
+            height: 200px;
+            overflow-y: auto;
+            margin-bottom: 10px;
+            border-radius: 4px;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            background: #000;
+            border: 1px solid var(--border);
+            color: white;
+            padding: 10px;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="main-wrapper">
+    <div class="content-area">
+        <h1 id="formTitle" style="margin-top:0;">Loading...</h1>
+        <div id="formBody" style="line-height:1.8; color:#d1d1d1;"></div>
+        
+        <div class="comment-section">
+            <h3>Comments & Chat</h3>
+            <div class="chat-box" id="chatBox">
+                </div>
+            <input type="text" id="chatInput" placeholder="Say something..." onkeypress="handleChat(event)">
+        </div>
+    </div>
+
+    <div class="sidebar">
+        <div class="author-card" id="authorArea">
+            </div>
+        <div style="margin-top:20px; font-size:13px; color:#888;">
+            <p><i class="fa-solid fa-calendar"></i> Published: <span id="pubDate">-</span></p>
+            <p><i class="fa-solid fa-eye"></i> Views: <span id="viewCount">0</span></p>
+        </div>
+        <button class="vote-btn" style="width:100%; padding:10px; background:var(--accent); border:none; color:white; border-radius:4px; cursor:pointer; font-weight:bold;">
+            Support Developer
+        </button>
+    </div>
+</div>
+
+<script>
+    const API = "https://backhand-forms.onrender.com/api/forms";
+    const urlParams = new URLSearchParams(window.location.search);
+    const formID = urlParams.get('id'); // format: username+title
+
+    async function loadFormData() {
+        const res = await fetch(API);
+        const data = await res.json();
+        
+        // Find the form where authorName+title matches the ID
+        const form = data.find(f => (f.authorName + "+" + f.title).replace(/\s+/g, '') === formID);
+
+        if (form) {
+            document.title = `${form.title} | WolfVox`;
+            document.getElementById('formTitle').innerText = form.title;
+            document.getElementById('formBody').innerHTML = form.content;
+            document.getElementById('pubDate').innerText = form.date || 'Recently';
+            document.getElementById('authorArea').innerHTML = `
+                <img src="${form.authorImg}" width="50" style="border-radius:50%">
+                <div>
+                    <div style="font-weight:bold">${form.authorName}</div>
+                    <div style="font-size:12px; color:gray">WolfVox Member</div>
+                </div>
+            `;
+        } else {
+            document.getElementById('formBody').innerText = "Form not found.";
+        }
+    }
+
+    function handleChat(e) {
+        if(e.key === 'Enter') {
+            const box = document.getElementById('chatBox');
+            const user = JSON.parse(localStorage.getItem('wv_user'));
+            if(!user) return alert("Login to chat");
+            
+            box.innerHTML += `<div><strong>${user.name}:</strong> ${e.target.value}</div>`;
+            box.scrollTop = box.scrollHeight;
+            e.target.value = '';
+        }
+    }
+
+    loadFormData();
+</script>
+
+</body>
+</html>
