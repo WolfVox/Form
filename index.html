@@ -166,68 +166,89 @@ let currentForm = null; // Stores the form data globally for the Like button
 async function loadPost() {
     try {
         const res = await fetch(API);
-        if (!res.ok) throw new Error("Server not responding");
         const data = await res.json();
 
-        // MATCHING LOGIC
+        // MATCHING ENGINE (Uses the Hyphenated ID logic)
         currentForm = data.find(f => {
             const emailUser = f.authorEmail ? f.authorEmail.split('@')[0].toLowerCase() : 'anonymous';
             const cleanTitle = f.title.toLowerCase().replace(/[^a-z0-9]/g, '');
-            return `${emailUser}-${cleanTitle}` === formID.toLowerCase().replace(/\s+/g, '-');
+            const targetID = formID.toLowerCase().replace(/\s+/g, '-');
+            return `${emailUser}-${cleanTitle}` === targetID;
         });
 
         if (currentForm) {
+            document.title = `${currentForm.title} | WolfVox`;
             document.getElementById('f-title').innerText = currentForm.title;
-            document.getElementById('f-body').innerHTML = currentForm.content;
+            
+            // 1. Handle the Rich Text Content (The Editor Data)
+            let htmlContent = `<div class="rich-text">${currentForm.content}</div>`;
+
+            // 2. Handle Multiple Images (Expansion Pack Support)
+            if (currentForm.images && currentForm.images.length > 0) {
+                currentForm.images.forEach(imgUrl => {
+                    if(imgUrl) htmlContent += `<img src="${imgUrl}" class="post-img">`;
+                });
+            } else if (currentForm.image) {
+                htmlContent += `<img src="${currentForm.image}" class="post-img">`;
+            }
+
+            // 3. Handle Multiple Videos (Expansion Pack Support)
+            const videoList = currentForm.videos || (currentForm.video ? [currentForm.video] : []);
+            videoList.forEach(vidUrl => {
+                let vID = "";
+                if (vidUrl.includes("v=")) vID = vidUrl.split("v=")[1].split("&")[0];
+                else if (vidUrl.includes("be/")) vID = vidUrl.split("be/")[1];
+                
+                if (vID) {
+                    htmlContent += `
+                    <div class="video-container">
+                        <iframe src="https://www.youtube.com/embed/${vID}" frameborder="0" allowfullscreen></iframe>
+                    </div>`;
+                }
+            });
+
+            // 4. Handle Main Download File & Extra Links
+            if (currentForm.file || (currentForm.links && currentForm.links.length > 0)) {
+                htmlContent += `<div class="resource-section"><h3>Resources</h3>`;
+                
+                if (currentForm.file) {
+                    htmlContent += `
+                    <div class="download-box">
+                        <span><i class="fa-solid fa-file-arrow-down"></i> Primary Download</span>
+                        <a href="${currentForm.file}" target="_blank" class="download-link">Download Now</a>
+                    </div>`;
+                }
+
+                if (currentForm.links) {
+                    currentForm.links.forEach(link => {
+                        htmlContent += `
+                        <div class="download-box" style="margin-top:5px;">
+                            <span><i class="fa-solid fa-link"></i> External Link</span>
+                            <a href="${link}" target="_blank" style="color:var(--accent);">Visit Site</a>
+                        </div>`;
+                    });
+                }
+                htmlContent += `</div>`;
+            }
+
+            // Inject into UI
+            document.getElementById('f-body').innerHTML = htmlContent;
             document.getElementById('f-date').innerText = currentForm.date || "Today";
             document.getElementById('f-likes').innerText = currentForm.likes || 0;
             
             // Sidebar Update
             document.getElementById('author-info').innerHTML = `
-                <img src="${currentForm.authorImg}" width="45" height="45" style="border-radius:50%">
+                <img src="${currentForm.authorImg}" width="45" height="45" style="border-radius:50%; border:1px solid var(--accent)">
                 <div>
-                    <div style="font-weight:700;">${currentForm.authorName}</div>
-                    <div style="font-size:11px; color:var(--accent);">@${currentForm.authorEmail.split('@')[0]}</div>
+                    <div style="font-weight:700; color:#fff;">${currentForm.authorName}</div>
+                    <div style="font-size:11px; color:var(--text-dim);">@${currentForm.authorEmail.split('@')[0]}</div>
                 </div>`;
+                
         } else {
             document.getElementById('f-body').innerHTML = "<h2>Form Not Found</h2>";
         }
     } catch (e) {
-        document.getElementById('f-body').innerHTML = `<h2 style="color:coral;">Server Connection Failed</h2><p>The backend is waking up. Please refresh in 30 seconds.</p>`;
-    }
-}
-
-// INTERACTION LOGIC (Like / Report)
-async function interact(type) {
-    const user = JSON.parse(localStorage.getItem('wv_user'));
-    if (!user) return alert("Please sign in on the WolfVox Hub to like posts!");
-    if (!currentForm) return;
-
-    try {
-        const response = await fetch(`${API}/interact`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                title: currentForm.title,
-                authorEmail: currentForm.authorEmail,
-                voterEmail: user.email,
-                type: type
-            })
-        });
-
-        const result = await response.json();
-        if (result.success) {
-            if (type === 'like') {
-                document.getElementById('f-likes').innerText = parseInt(document.getElementById('f-likes').innerText) + 1;
-                alert("Liked!");
-            } else {
-                alert("Reported to Moderation.");
-            }
-        } else {
-            alert(result.message || "You already interacted with this.");
-        }
-    } catch (e) {
-        alert("Interaction failed. Server might be offline.");
+        document.getElementById('f-body').innerHTML = "<h2>Server Offline</h2>";
     }
 }
 
