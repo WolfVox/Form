@@ -162,71 +162,40 @@
     const urlParams = new URLSearchParams(window.location.search);
     const formID = urlParams.get('id');
 
-    async function loadPost() {
-        if (!formID) {
-            document.getElementById('f-body').innerHTML = "<h2>Error: Missing URL Parameter</h2><p>No Form ID was provided.</p>";
-            return;
-        }
-
-        try {
-            const res = await fetch(API);
-            const data = await res.json();
-
-            // MATCHING LOGIC (Must match Hub precisely)
-            const form = data.find(f => {
-                const emailUser = f.authorEmail ? f.authorEmail.split('@')[0] : 'anonymous';
-                const cleanTitle = f.title.replace(/[^a-zA-Z0-9]/g, '');
-                const generatedID = `${emailUser}+${cleanTitle}`;
-                return generatedID === formID;
-            });
-
-            if (form) {
-                // Set metadata
-                document.title = `${form.title} | WolfVox`;
-                document.getElementById('b-title').innerText = form.title;
-                document.getElementById('f-title').innerText = form.title;
-                document.getElementById('f-body').innerHTML = form.content;
-                document.getElementById('f-date').innerText = form.date || "Recently";
-                document.getElementById('f-likes').innerText = form.likes || 0;
-
-                // Image handling
-                if (form.image) {
-                    const imgTag = `<img src="${form.image}" alt="Post Image">`;
-                    document.getElementById('f-body').innerHTML += imgTag;
-                }
-
-                // Sidebar Author Display
-                document.getElementById('author-info').innerHTML = `
-                    <img src="${form.authorImg || 'https://ui-avatars.com/api/?name=' + form.authorName}" width="45" height="45">
-                    <div>
-                        <div style="font-weight: 700; color:#fff;">${form.authorName}</div>
-                        <div style="font-size: 11px; color: var(--accent);">@${form.authorEmail.split('@')[0]}</div>
-                    </div>
-                `;
-
-                // Handle Google Verification Tag injection
-                if (form.googleVerify) {
-                    let meta = document.createElement('meta');
-                    meta.name = "google-site-verification";
-                    meta.content = form.googleVerify;
-                    document.head.appendChild(meta);
-                    document.getElementById('f-verify-status').innerHTML = `<i class="fa-solid fa-shield-check" style="color:#00d1b2"></i> Google Verified`;
-                }
-
-            } else {
-                // ID exists in URL but not in the database
-                document.getElementById('f-body').innerHTML = `
-                    <div style="text-align:center; padding:60px; color:var(--text-dim);">
-                        <i class="fa-solid fa-ghost" style="font-size:40px; margin-bottom:20px; opacity:0.3;"></i>
-                        <h2>Form Not Found</h2>
-                        <p>This post may have been deleted or the ID <b>${formID}</b> is incorrect.</p>
-                        <a href="https://wolfvox.github.io/Forms/" style="color:var(--accent); text-decoration:none; font-weight:600;">← Back to Hub</a>
-                    </div>`;
-            }
-        } catch (e) {
-            document.getElementById('f-body').innerHTML = `<div style="text-align:center; color:coral;"><h2>Offline</h2><p>Could not connect to WolfVox Database.</p></div>`;
-        }
+async function loadPost() {
+    if (!formID) {
+        document.getElementById('f-body').innerHTML = "<h2>Error: No ID.</h2>";
+        return;
     }
+
+    try {
+        const res = await fetch(API);
+        const data = await res.json();
+
+        // MATCHING LOGIC
+        const form = data.find(f => {
+            const emailUser = f.authorEmail ? f.authorEmail.split('@')[0].toLowerCase() : 'anonymous';
+            const cleanTitle = f.title.toLowerCase().replace(/[^a-z0-9]/g, '');
+            const generatedID = `${emailUser}-${cleanTitle}`;
+            
+            return generatedID === formID.toLowerCase(); // Compare both in lowercase
+        });
+
+        if (form) {
+            // ... (Your code to display the post)
+            document.getElementById('f-body').innerHTML = form.content;
+        } else {
+            // Updated Error Display
+            document.getElementById('f-body').innerHTML = `
+                <div style="text-align:center; padding:60px;">
+                    <h2>Form Not Found</h2>
+                    <p>ID Attempted: <code style="background:#000; padding:4px;">${formID}</code></p>
+                </div>`;
+        }
+    } catch (e) {
+        document.getElementById('f-body').innerHTML = "<h2>Database Error</h2>";
+    }
+}
 
     loadPost();
 </script>
