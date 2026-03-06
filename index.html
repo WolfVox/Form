@@ -153,57 +153,38 @@
     const API = "https://backhand-forms.onrender.com/api/forms";
     const urlParams = new URLSearchParams(window.location.search);
     const formID = urlParams.get('id');
+    
+async function loadPost() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const formID = urlParams.get('id');
 
-    async function loadPost() {
-        if (!formID) {
-            document.getElementById('f-body').innerHTML = "<h2>Error: No ID found.</h2>";
-            return;
-        }
-
-        try {
-            const res = await fetch(API);
-            const data = await res.json();
-
-            // Match ID (Format: AuthorName+Title)
-            const form = data.find(f => (f.authorName + "+" + f.title).replace(/\s+/g, '') === formID);
-
-            if (form) {
-                // Update Meta/Title
-                document.title = `${form.title} | WolfVox`;
-                document.getElementById('b-title').innerText = form.title;
-                document.getElementById('f-title').innerText = form.title;
-                document.getElementById('f-body').innerHTML = form.content;
-                document.getElementById('f-date').innerText = form.date || "Today";
-                document.getElementById('f-likes').innerText = form.likes || 0;
-
-                // Handle Image Preview
-                if (form.image) {
-                    document.getElementById('f-body').innerHTML += `<img src="${form.image}" alt="Preview">`;
-                }
-
-                // Handle Author Info
-                document.getElementById('author-info').innerHTML = `
-                    <img src="${form.authorImg || 'https://ui-avatars.com/api/?name=?'}" width="45" height="45">
-                    <div>
-                        <div style="font-weight: 700;">${form.authorName}</div>
-                        <div style="font-size: 11px; color: var(--accent);">DEVELOPER</div>
-                    </div>
-                `;
-
-                // GOOGLE VERIFICATION INJECTION
-                if (form.googleVerify) {
-                    let meta = document.createElement('meta');
-                    meta.name = "google-site-verification";
-                    meta.content = form.googleVerify;
-                    document.head.appendChild(meta);
-                }
-            } else {
-                document.getElementById('f-body').innerHTML = "<h2>Post not found.</h2><p>It may have been deleted by the author or moderation.</p>";
-            }
-        } catch (e) {
-            document.getElementById('f-body').innerHTML = "<h2>Database Offline.</h2>";
-        }
+    if (!formID) {
+        document.getElementById('f-body').innerHTML = "<h2>Error: No ID found.</h2>";
+        return;
     }
+
+    try {
+        const res = await fetch(API);
+        const data = await res.json();
+
+        // Match using the email-prefix + clean-title logic
+        const form = data.find(f => {
+            const emailUser = f.authorEmail ? f.authorEmail.split('@')[0] : 'anonymous';
+            const cleanTitle = f.title.replace(/[^a-zA-Z0-9]/g, '');
+            return `${emailUser}+${cleanTitle}` === formID;
+        });
+
+        if (form) {
+            // ... (Your code to display the title, body, and author) ...
+            document.getElementById('f-title').innerText = form.title;
+            document.getElementById('f-body').innerHTML = form.content;
+        } else {
+            document.getElementById('f-body').innerHTML = "<h2>Form Not Found</h2><p>This post may have been deleted.</p>";
+        }
+    } catch (e) {
+        document.getElementById('f-body').innerHTML = "<h2>Server Error</h2>";
+    }
+}
 
     loadPost();
 </script>
