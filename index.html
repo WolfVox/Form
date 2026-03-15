@@ -6,12 +6,14 @@
     <title>WolfVox™ | Viewer</title>
     <link rel="icon" type="image/x-icon" href="https://github.com/WolfVox/wolfvox.github.io/blob/main/WolfVoxLogo.png?raw=true">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
     
     <style>
         :root {
-            --bg: #060608;
-            --header: #111113;
-            --card-bg: #161618;
+            --bg: #000000;
+            --header: #000000;
+            --card-bg: #0f0f10;
+            --Notic-bg: rgb(0, 0, 0);
             --border: #2d2d30;
             --accent: #7a6cff;
             --text-main: #eeeeee;
@@ -29,64 +31,96 @@
             color: var(--text-main); margin: 0; 
         }
 
-        /* NAVIGATION */
+        /* NAVIGATION (Copied from Hub) */
         nav {
-            display: flex; align-items: center; justify-content: space-between;
+            display: flex; align-items: center; gap: 20px;
             padding: 12px 30px; background: var(--header); border-bottom: 1px solid var(--border);
             position: sticky; top: 0; z-index: 1000;
         }
+        .search-container { flex: 1; max-width: 400px; position: relative; }
+        .search-container input {
+            width: 100%; background: #000; border: 1px solid var(--border);
+            color: white; padding: 6px 12px 6px 35px; border-radius: 6px; font-size: 13px;
+        }
+        .search-container i { position: absolute; left: 12px; top: 9px; color: var(--text-dim); font-size: 12px; }
 
-        /* MAIN CONTENT AREA */
-        .container { max-width: 1100px; margin: 40px auto; padding: 0 20px; display: flex; gap: 30px; }
-        
+        .sub-nav {
+            display: flex; gap: 5px; padding: 10px 30px; 
+            background: var(--header); border-bottom: 1px solid var(--border);
+            margin-bottom: 30px;
+        }
+        .sub-btn {
+            background: transparent; border: none; color: var(--text-main);
+            padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 14px;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .sub-btn:hover { background: var(--border); }
+        .sub-btn.active { border-bottom: 2px solid #f78166; border-radius: 0; font-weight: 600; }
+
+        /* CONTENT LAYOUT */
+        .container { max-width: 1100px; margin: 0 auto; padding: 0 20px; display: flex; gap: 30px; min-height: 60vh; }
         .main-content { 
             flex: 3; background: var(--card-bg); border: 1px solid var(--border); 
-            border-radius: 12px; padding: 40px; overflow: hidden;
+            border-radius: 12px; padding: 40px; margin-bottom: 50px;
         }
-
         .sidebar { flex: 1; }
         .sidebar-card { 
             background: var(--card-bg); border: 1px solid var(--border); 
-            border-radius: 12px; padding: 25px; position: sticky; top: 85px;
+            border-radius: 12px; padding: 25px; position: sticky; top: 140px;
         }
 
-        /* RICH TEXT STYLING */
         .post-body { line-height: 1.7; font-size: 16px; color: #d1d5db; }
         .post-body img { max-width: 100%; border-radius: 8px; margin: 20px 0; border: 1px solid var(--border); }
         .video-container { margin-top: 20px; position: relative; padding-bottom: 56.25%; height: 0; border-radius: 8px; overflow: hidden; }
         .video-container iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
 
-        /* GITHUB STYLE BUTTONS */
-        .btn-action {
-            width: 100%; padding: 12px; margin-top: 10px; background: #21262d; 
-            border: 1px solid var(--border); color: #c9d1d9; border-radius: 6px; 
-            cursor: pointer; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 8px;
+        .FeedBackBtn {
+            position:relative; overflow:hidden; border-radius:0px; border:1px solid rgb(255, 255, 255);
+            background:rgba(0, 0, 0, 0.02); color:white; font-weight:600; letter-spacing:0.4px;
+            backdrop-filter:blur(6px); transition:all .25s cubic-bezier(.4,0,.2,1);
+            box-shadow:0 4px 18px rgba(0,0,0,0.25); padding:10px; flex:1;
         }
-        .btn-action:hover { background: #30363d; border-color: #8b949e; }
-        .btn-accent { background: var(--accent); color: white; border: none; }
-        .btn-accent:hover { opacity: 0.9; transform: translateY(-2px); }
+        .FeedBackBtn:hover { color:#000; background:#fff; }
 
-        /* RESOURCE BOXES */
-        .resource-box {
-            background: #0d1117; border: 1px solid var(--border); padding: 15px;
-            border-radius: 8px; margin-top: 20px; display: flex; align-items: center; justify-content: space-between;
+        /* SITEMAP (Copied from Hub) */
+        .sitemap-container {
+            max-width: 100%; margin-top: 50px;
+            background: var(--Notic-bg); border-top: rgba(255, 255, 255, 0.235) solid 0.5px;
+            padding: 40px; display: flex; justify-content: space-evenly; align-items: center;
         }
-
-        footer { text-align: center; padding: 40px; color: var(--text-dim); font-size: 13px; background-color: #0f0f0f; border-top: 1px solid var(--border); margin-top: 100px; }
+        .sitemap-col a { display: block; color: var(--accent); text-decoration: none; margin-bottom: 8px; font-size: 14px; }
+        footer { text-align: center; padding: 40px; color: var(--text-dim); font-size: 13px; background-color: #000; border-top: 1px solid var(--border); }
+        
+        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: none; align-items: center; justify-content: center; z-index: 3000; }
+        .modal-content { background: var(--card-bg); border: 1px solid var(--border); padding: 30px; border-radius: 12px; width: 100%; max-width: 400px; text-align: center; }
     </style>
 </head>
 <body>
 
 <nav>
-    <h2 onclick="location.href='https://wolfvox.github.io/Forms/index.html'" style="font-size: 18px; margin:0; cursor:pointer;">
-        Wolf<span style="color:var(--accent)">Vox</span>
-    </h2>
-    <div style="font-size: 14px; color: var(--text-dim);">Form Viewer v2.0</div>
+    <img src="https://github.com/WolfVox/wolfvox.github.io/blob/main/WolfVoxLogo.png?raw=true" height="30px" width="30px" onclick="location.href='index.html'" style="cursor:pointer">
+    <h2 style="font-size: 18px; margin:0;">Wolf<span style="color:var(--accent)">Vox</span></h2>
+    <div class="search-container">
+        <i class="fa-solid fa-magnifying-glass"></i>
+        <input type="text" id="searchInput" placeholder="Search forms..." onkeyup="if(event.key==='Enter') window.location.href='index.html?q='+this.value">
+    </div>
+    <div style="flex-grow: 1;"></div>
+    <div class="nav-links" id="navAuthArea" style="font-size: 14px; display: flex; gap: 15px; align-items: center;">
+        <a href="javascript:void(0)" onclick="openAuth()" style="color:white; text-decoration:none;">Sign In</a>
+        <button onclick="handlePublish()" class="FeedBackBtn">Publish</button>
+    </div>
 </nav>
+
+<div class="sub-nav">
+    <button class="sub-btn active" onclick="location.href='index.html'"><i class="fa-solid fa-code"></i> Forms</button>
+    <button class="sub-btn" onclick="location.href='Market'"><i class="fa-solid fa-shop"></i> Marketplace</button>
+    <button class="sub-btn" onclick="location.href='Docs'"><i class="fa-solid fa-book"></i> Docs</button>
+    <button class="sub-btn" onclick="location.href='Insights'"><i class="fa-solid fa-chart-line"></i> Insights</button>
+</div>
 
 <div class="container">
     <div class="main-content">
-        <h1 id="f-title" style="margin-top:0; font-size: 32px;">Loading Form...</h1>
+        <h1 id="f-title" style="margin-top:0; font-size: 32px; color:var(--accent);">Loading Form...</h1>
         <div id="f-body" class="post-body">
             <i class="fa-solid fa-spinner fa-spin"></i> Fetching from WolfVox Servers...
         </div>
@@ -94,39 +128,67 @@
 
     <div class="sidebar">
         <div class="sidebar-card">
-            <div id="author-info" style="display:flex; align-items:center; gap:12px; margin-bottom:20px;">
-                </div>
-            
-            <hr style="border:0; border-top:1px solid var(--border); margin:20px 0;">
-            
-            <div style="font-size: 13px; color: var(--text-dim); line-height: 2;">
-                <div><i class="fa-solid fa-calendar"></i> Posted: <span id="f-date">--</span></div>
-                <div><i class="fa-solid fa-heart" style="color:var(--error)"></i> Likes: <span id="f-likes">0</span></div>
+            <div id="author-info" style="display:flex; align-items:center; gap:12px; margin-bottom:20px;"></div>
+            <div style="font-size: 13px; color: var(--text-dim); line-height: 2; border-top: 1px solid var(--border); padding-top:15px;">
+                <div><i class="fa-solid fa-calendar"></i> <span id="f-date">--</span></div>
+                <div><i class="fa-solid fa-thumbs-up"></i> <span id="f-likes">0</span> Likes</div>
             </div>
-
-            <button class="btn-action btn-accent" onclick="interact('like')" style="margin-top:20px;">
-                <i class="fa-solid fa-thumbs-up"></i> Like Post
-            </button>
-            <button class="btn-action" style="color: var(--error);" onclick="interact('report')">
-                <i class="fa-solid fa-flag"></i> Report
+            <button class="FeedBackBtn" onclick="interact('like')" style="width:100%; margin-top:20px; height:45px;">Like This Form</button>
+            <button onclick="interact('report')" style="width:100%; background:none; border:none; color:var(--error); margin-top:15px; cursor:pointer; font-size:12px;">
+                <i class="fa-solid fa-flag"></i> Report Content
             </button>
         </div>
     </div>
 </div>
 
-<footer id="dynamic-footer">
-    &copy; 2026 WolfVoxCo. | Community Forms.
-</footer>
+<div class="sitemap-container">
+    <div><img src="https://github.com/WolfVox/wolfvox.github.io/blob/main/WolfVoxLogo.png?raw=true" height="100px" width="100px"></div>
+    <div class="sitemap-col"><h4>Product</h4><a href="index.html">Forms</a><a href="#">Market</a></div>
+    <div class="sitemap-col"><h4>Resources</h4><a href="#">Docs</a><a href="#">Hub</a></div>
+    <div class="sitemap-col"><h4>Community</h4><a href="#">Discord</a><a href="#">Twitter</a></div>
+</div>
+
+<footer>&copy; 2026 WolfVoxCo. | Community Forms.</footer>
+
+<div id="authModal" class="modal">
+    <div class="modal-content">
+        <h3>Sign In</h3>
+        <div id="g_id_onload" data-client_id="116311894928-qararv9qqqhtjomb2nbljfbrgrho9uft.apps.googleusercontent.com" data-callback="handleGoogleLogin"></div>
+        <div class="g_id_signin" data-type="standard" data-theme="filled_black"></div>
+        <button onclick="closeAuth()" style="margin-top:20px; background:none; border:none; color:var(--text-dim); cursor:pointer;">Cancel</button>
+    </div>
+</div>
 
 <script>
     const API = "https://backhand-forms.onrender.com/api/forms";
     const urlParams = new URLSearchParams(window.location.search);
     const formID = urlParams.get('id');
+    let user = JSON.parse(localStorage.getItem('wv_user')) || null;
     let currentForm = null;
+
+    function openAuth() { document.getElementById('authModal').style.display='flex'; }
+    function closeAuth() { document.getElementById('authModal').style.display='none'; }
+    function handleGoogleLogin(response) {
+        const payload = JSON.parse(atob(response.credential.split('.')[1]));
+        localStorage.setItem('wv_user', JSON.stringify({name: payload.name, email: payload.email, img: payload.picture}));
+        location.reload();
+    }
+    function handlePublish() { if(!user) openAuth(); else window.location.href='Create.html'; }
+
+    function updateNav() {
+        if(user) {
+            document.getElementById('navAuthArea').innerHTML = `
+                <div style="display:flex; align-items:center; gap:10px; background:var(--card-bg); padding:5px 10px; border-radius:20px; border:1px solid var(--border);">
+                    <span style="font-size:12px;">${user.name}</span>
+                    <img src="${user.img}" width="24" height="24" style="border-radius:50%; border:1px solid var(--accent);">
+                </div>
+                <a href="#" onclick="localStorage.removeItem('wv_user'); location.reload();" style="color:var(--error); text-decoration:none; font-size:11px;">Logout</a>`;
+        }
+    }
 
     async function loadPost() {
         if (!formID) {
-            document.getElementById('f-body').innerHTML = "<h2>Error: Missing ID</h2>";
+            document.getElementById('f-body').innerHTML = "<h2>Invalid Link</h2>";
             return;
         }
 
@@ -134,75 +196,47 @@
             const res = await fetch(API);
             const data = await res.json();
 
-            // MATCHING ENGINE
+            // EXACT MATCHING LOGIC (Must match Hub precisely)
             currentForm = data.find(f => {
                 const emailUser = f.authorEmail ? f.authorEmail.split('@')[0].toLowerCase() : 'anonymous';
-                const cleanTitle = f.title.toLowerCase().replace(/[^a-z0-9]/g, '');
-                const targetID = formID.toLowerCase().replace(/\s+/g, '-');
-                return `${emailUser}-${cleanTitle}` === targetID;
+                const cleanTitle = f.title.toLowerCase()
+                    .replace(/[^\w\s]|_/g, "x") // Special/Emojis to x
+                    .replace(/\s+/g, "");       // No spaces
+                
+                return `${emailUser}-${cleanTitle}` === formID.toLowerCase();
             });
 
             if (currentForm) {
                 document.title = `${currentForm.title} | WolfVox`;
                 document.getElementById('f-title').innerText = currentForm.title;
-                document.getElementById('f-date').innerText = currentForm.date || "Today";
+                document.getElementById('f-date').innerText = currentForm.date || "Published Recently";
                 document.getElementById('f-likes').innerText = currentForm.likes || 0;
 
-                // BUILD BODY CONTENT
-                let contentHTML = `<div style="margin-bottom:30px;">${currentForm.content}</div>`;
-
-                // Render Images
-                const images = currentForm.images || (currentForm.image ? [currentForm.image] : []);
-                images.forEach(img => {
-                    if(img) contentHTML += `<img src="${img}" alt="content image">`;
-                });
-
-                // Render Videos
-                const videos = currentForm.videos || (currentForm.video ? [currentForm.video] : []);
-                videos.forEach(vid => {
-                    let vID = vid.includes("v=") ? vid.split("v=")[1].split("&")[0] : vid.split("/").pop();
-                    if(vID) contentHTML += `<div class="video-container"><iframe src="https://www.youtube.com/embed/${vID}" frameborder="0" allowfullscreen></iframe></div>`;
-                });
-
-                // Render Files/Links
-                if (currentForm.file || currentForm.links) {
-                    contentHTML += `<h3 style="margin-top:40px; border-bottom:1px solid var(--border); padding-bottom:10px;">Attached Resources</h3>`;
-                    if (currentForm.file) {
-                        contentHTML += `<div class="resource-box"><span><i class="fa-solid fa-download"></i> Primary Download</span><a href="${currentForm.file}" target="_blank" style="color:var(--accent); text-decoration:none; font-weight:bold;">Get File</a></div>`;
-                    }
-                    if (currentForm.links) {
-                        currentForm.links.forEach(l => {
-                            contentHTML += `<div class="resource-box"><span><i class="fa-solid fa-link"></i> External Resource</span><a href="${l}" target="_blank" style="color:var(--accent); text-decoration:none;">Open Link</a></div>`;
-                        });
-                    }
+                let contentHTML = `<div>${currentForm.content}</div>`;
+                if(currentForm.image) contentHTML += `<img src="${currentForm.image}" style="width:100%; border-radius:8px; margin-top:20px; border:1px solid var(--border);">`;
+                
+                if(currentForm.video) {
+                    let vID = currentForm.video.includes("v=") ? currentForm.video.split("v=")[1].split("&")[0] : currentForm.video.split("/").pop();
+                    contentHTML += `<div class="video-container"><iframe src="https://www.youtube.com/embed/${vID}" frameborder="0" allowfullscreen></iframe></div>`;
                 }
-
+                
                 document.getElementById('f-body').innerHTML = contentHTML;
-
-                // AUTHOR INFO
                 document.getElementById('author-info').innerHTML = `
-                    <img src="${currentForm.authorImg}" width="48" height="48" style="border-radius:50%; border:2px solid var(--accent);">
+                    <img src="${currentForm.authorImg || 'https://ui-avatars.com/api/?name=?'}" width="40" height="40" style="border-radius:50%; border:2px solid var(--accent);">
                     <div>
-                        <div style="font-weight: 700; color:white;">${currentForm.authorName}</div>
-                        <div style="font-size: 12px; color: var(--accent);">@${currentForm.authorEmail.split('@')[0]}</div>
+                        <div style="font-weight:700;">${currentForm.authorName}</div>
+                        <div style="font-size:11px; color:var(--text-dim);">@${currentForm.authorEmail.split('@')[0]}</div>
                     </div>`;
-
-                // DYNAMIC FOOTER UPDATE
-                document.getElementById('dynamic-footer').innerHTML = `&copy; 2026 | ${currentForm.authorEmail} | Viewing: ${currentForm.title}`;
-
             } else {
-                document.getElementById('f-body').innerHTML = "<h2>Form Not Found</h2>";
+                document.getElementById('f-body').innerHTML = "<h2>Form Not Found</h2><p>Double check the ID or search for the form manually.</p>";
             }
         } catch (e) {
-            document.getElementById('f-body').innerHTML = "<h2 style='color:var(--error)'>Connection Error</h2><p>Check if the API is awake.</p>";
+            document.getElementById('f-body').innerHTML = "<h2>Error</h2><p>Failed to connect to WolfVox Servers.</p>";
         }
     }
 
     async function interact(type) {
-        const user = JSON.parse(localStorage.getItem('wv_user'));
-        if (!user) return alert("Sign in on the Hub to interact!");
-        if (!currentForm) return;
-
+        if (!user) return openAuth();
         try {
             const res = await fetch(`${API}/interact`, {
                 method: "POST",
@@ -214,16 +248,11 @@
                     type: type
                 })
             });
-            const result = await res.json();
-            if (result.success) {
-                if(type==='like') {
-                    document.getElementById('f-likes').innerText = parseInt(document.getElementById('f-likes').innerText) + 1;
-                    alert("Appreciated!");
-                } else alert("Reported to staff.");
-            } else alert(result.message);
-        } catch (e) { alert("Server error."); }
+            if (res.ok) alert(type === 'like' ? "Liked!" : "Reported.");
+        } catch (e) { alert("Action failed."); }
     }
 
+    updateNav();
     loadPost();
 </script>
 </body>
