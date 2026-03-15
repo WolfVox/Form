@@ -200,7 +200,7 @@
             currentForm = data.find(f => {
                 const emailUser = f.authorEmail ? f.authorEmail.split('@')[0].toLowerCase() : 'anonymous';
                 const cleanTitle = f.title.toLowerCase()
-                    .replace(/[^\w\s]|_/g, "x") // Special/Emojis to x
+                    .replace(/[^\w\s]|_/g, "") // Special/Emojis to x
                     .replace(/\s+/g, "");       // No spaces
                 
                 return `${emailUser}-${cleanTitle}` === formID.toLowerCase();
