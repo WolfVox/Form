@@ -196,12 +196,13 @@
             const res = await fetch(API);
             const data = await res.json();
 
-            // EXACT MATCHING LOGIC (Must match Hub precisely)
+            // Find the form by matching the URL ID to the Title/Email combo
             currentForm = data.find(f => {
-                const emailUser = f.authorEmail ? f.authorEmail.split('@')[0].toLowerCase() : 'anonymous';
+                // We use lowercase 'authoremail' because that's what the DB returns
+                const emailUser = f.authoremail ? f.authoremail.split('@')[0].toLowerCase() : 'anonymous';
                 const cleanTitle = f.title.toLowerCase()
-                    .replace(/[^\w\s]|_/g, "") // Special/Emojis to x
-                    .replace(/\s+/g, "");       // No spaces
+                    .replace(/[^\w\s]|_/g, "") 
+                    .replace(/\s+/g, "");       
                 
                 return `${emailUser}-${cleanTitle}` === formID.toLowerCase();
             });
@@ -221,14 +222,16 @@
                 }
                 
                 document.getElementById('f-body').innerHTML = contentHTML;
+                
+                // FIXED: Using lowercase keys from Supabase
                 document.getElementById('author-info').innerHTML = `
-                    <img src="${currentForm.authorImg || 'https://ui-avatars.com/api/?name=?'}" width="40" height="40" style="border-radius:50%; border:2px solid var(--accent);">
+                    <img src="${currentForm.authorimg || 'https://ui-avatars.com/api/?name=?'}" width="40" height="40" style="border-radius:50%; border:2px solid var(--accent);">
                     <div>
-                        <div style="font-weight:700;">${currentForm.authorName}</div>
-                        <div style="font-size:11px; color:var(--text-dim);">@${currentForm.authorEmail.split('@')[0]}</div>
+                        <div style="font-weight:700;">${currentForm.authorname || 'Anonymous'}</div>
+                        <div style="font-size:11px; color:var(--text-dim);">@${currentForm.authoremail ? currentForm.authoremail.split('@')[0] : 'unknown'}</div>
                     </div>`;
             } else {
-                document.getElementById('f-body').innerHTML = "<h2>Form Not Found</h2><p>Double check the ID or search for the form manually.</p>";
+                document.getElementById('f-body').innerHTML = "<h2>Form Not Found</h2><p>Check the ID or search manually.</p>";
             }
         } catch (e) {
             document.getElementById('f-body').innerHTML = "<h2>Error</h2><p>Failed to connect to WolfVox Servers.</p>";
@@ -237,19 +240,27 @@
 
     async function interact(type) {
         if (!user) return openAuth();
+        if (!currentForm) return;
+
         try {
             const res = await fetch(`${API}/interact`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                    title: currentForm.title,
-                    authorEmail: currentForm.authorEmail,
+                    id: currentForm.id,           // CRITICAL: Must send the ID
+                    authoremail: currentForm.authoremail, // Lowercase
                     voterEmail: user.email,
                     type: type
                 })
             });
-            if (res.ok) alert(type === 'like' ? "Liked!" : "Reported.");
-        } catch (e) { alert("Action failed."); }
+            const result = await res.json();
+            if (res.ok) {
+                alert(type === 'like' ? "Liked!" : "Reported.");
+                location.reload(); // Refresh to show new count
+            } else {
+                alert(result.error || "Action failed.");
+            }
+        } catch (e) { alert("Server error."); }
     }
 
     updateNav();
