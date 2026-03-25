@@ -187,53 +187,66 @@
     }
 
     async function loadPost() {
-        if (!formID) {
-            document.getElementById('f-body').innerHTML = "<h2>Invalid Link</h2>";
-            return;
-        }
-
-        try {
-            const res = await fetch(API);
-            const data = await res.json();
-
-            // EXACT MATCHING LOGIC (Must match Hub precisely)
-            currentForm = data.find(f => {
-                const emailUser = f.authorEmail ? f.authorEmail.split('@')[0].toLowerCase() : 'anonymous';
-                const cleanTitle = f.title.toLowerCase()
-                    .replace(/[^\w\s]|_/g, "") // Special/Emojis to x
-                    .replace(/\s+/g, "");       // No spaces
-                
-                return `${emailUser}-${cleanTitle}` === formID.toLowerCase();
-            });
-
-            if (currentForm) {
-                document.title = `${currentForm.title} | WolfVox`;
-                document.getElementById('f-title').innerText = currentForm.title;
-                document.getElementById('f-date').innerText = currentForm.date || "Published Recently";
-                document.getElementById('f-likes').innerText = currentForm.likes || 0;
-
-                let contentHTML = `<div>${currentForm.content}</div>`;
-                if(currentForm.image) contentHTML += `<img src="${currentForm.image}" style="width:100%; border-radius:8px; margin-top:20px; border:1px solid var(--border);">`;
-                
-                if(currentForm.video) {
-                    let vID = currentForm.video.includes("v=") ? currentForm.video.split("v=")[1].split("&")[0] : currentForm.video.split("/").pop();
-                    contentHTML += `<div class="video-container"><iframe src="https://www.youtube.com/embed/${vID}" frameborder="0" allowfullscreen></iframe></div>`;
-                }
-                
-                document.getElementById('f-body').innerHTML = contentHTML;
-                document.getElementById('author-info').innerHTML = `
-                    <img src="${currentForm.authorImg || 'https://ui-avatars.com/api/?name=?'}" width="40" height="40" style="border-radius:50%; border:2px solid var(--accent);">
-                    <div>
-                        <div style="font-weight:700;">${currentForm.authorName}</div>
-                        <div style="font-size:11px; color:var(--text-dim);">@${currentForm.authorEmail.split('@')[0]}</div>
-                    </div>`;
-            } else {
-                document.getElementById('f-body').innerHTML = "<h2>Form Not Found</h2><p>Double check the ID or search for the form manually.</p>";
-            }
-        } catch (e) {
-            document.getElementById('f-body').innerHTML = "<h2>Error</h2><p>Failed to connect to WolfVox Servers.</p>";
-        }
+    if (!formID) {
+        document.getElementById('f-body').innerHTML = "<h2>Invalid Link</h2>";
+        return;
     }
+
+    try {
+        const res = await fetch(API);
+        const data = await res.json();
+
+        currentForm = data.find(f => {
+            // FIX: Use 'f.authoremail' lowercase and handle potential undefined
+            const emailUser = (f.authoremail || 'anonymous').split('@')[0].toLowerCase();
+            
+            // FIX: Ensure 'f.title' exists before calling .toLowerCase()
+            const cleanTitle = (f.title || "untitled").toLowerCase()
+                .replace(/[^\w\s]|_/g, "") 
+                .replace(/\s+/g, "");        
+            
+            return `${emailUser}-${cleanTitle}` === formID.toLowerCase();
+        });
+
+        if (currentForm) {
+            document.title = `${currentForm.title || 'Form'} | WolfVox`;
+            document.getElementById('f-title').innerText = currentForm.title || "Untitled";
+            document.getElementById('f-date').innerText = currentForm.date || "Published Recently";
+            document.getElementById('f-likes').innerText = currentForm.likes || 0;
+
+            let contentHTML = `<div>${currentForm.content || ''}</div>`;
+            
+            // Handle image and video (ensure these are lowercase in DB too!)
+            if(currentForm.image) {
+                contentHTML += `<img src="${currentForm.image}" style="width:100%; border-radius:8px; margin-top:20px; border:1px solid var(--border);">`;
+            }
+            
+            if(currentForm.video) {
+                let vID = currentForm.video.includes("v=") ? currentForm.video.split("v=")[1].split("&")[0] : currentForm.video.split("/").pop();
+                contentHTML += `<div class="video-container"><iframe src="https://www.youtube.com/embed/${vID}" frameborder="0" allowfullscreen></iframe></div>`;
+            }
+            
+            document.getElementById('f-body').innerHTML = contentHTML;
+
+            // FIX: Using all lowercase for author details
+            const authorImg = currentForm.authorimg || 'https://ui-avatars.com/api/?name=?';
+            const authorName = currentForm.authorname || 'Anonymous Wolf';
+            const authorHandle = (currentForm.authoremail || 'anon@wolf').split('@')[0];
+
+            document.getElementById('author-info').innerHTML = `
+                <img src="${authorImg}" width="40" height="40" style="border-radius:50%; border:2px solid var(--accent);">
+                <div>
+                    <div style="font-weight:700;">${authorName}</div>
+                    <div style="font-size:11px; color:var(--text-dim);">@${authorHandle}</div>
+                </div>`;
+        } else {
+            document.getElementById('f-body').innerHTML = "<h2>Form Not Found</h2><p>Double check the ID or search for the form manually.</p>";
+        }
+    } catch (e) {
+        console.error("Frontend Error:", e);
+        document.getElementById('f-body').innerHTML = "<h2>Error</h2><p>Failed to connect to WolfVox Servers.</p>";
+    }
+}
 
     async function interact(type) {
         if (!user) return openAuth();
