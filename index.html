@@ -166,112 +166,147 @@
     let user = JSON.parse(localStorage.getItem('wv_user')) || null;
     let currentForm = null;
 
+    // --- AUTH & UI ---
     function openAuth() { document.getElementById('authModal').style.display='flex'; }
     function closeAuth() { document.getElementById('authModal').style.display='none'; }
+    
     function handleGoogleLogin(response) {
         const payload = JSON.parse(atob(response.credential.split('.')[1]));
-        localStorage.setItem('wv_user', JSON.stringify({name: payload.name, email: payload.email, img: payload.picture}));
+        localStorage.setItem('wv_user', JSON.stringify({
+            name: payload.name, 
+            email: payload.email, 
+            img: payload.picture
+        }));
         location.reload();
     }
+
     function handlePublish() { if(!user) openAuth(); else window.location.href='Create.html'; }
 
     function updateNav() {
         if(user) {
             document.getElementById('navAuthArea').innerHTML = `
-                <div style="display:flex; align-items:center; gap:10px; background:var(--card-bg); padding:5px 10px; border-radius:20px; border:1px solid var(--border);">
-                    <span style="font-size:12px;">${user.name}</span>
+                <div style="display:flex; align-items:center; gap:10px; background:var(--card-bg); padding:5px 12px; border-radius:20px; border:1px solid var(--border);">
+                    <span style="font-size:12px; font-weight:600;">${user.name}</span>
                     <img src="${user.img}" width="24" height="24" style="border-radius:50%; border:1px solid var(--accent);">
                 </div>
-                <a href="#" onclick="localStorage.removeItem('wv_user'); location.reload();" style="color:var(--error); text-decoration:none; font-size:11px;">Logout</a>`;
+                <a href="#" onclick="localStorage.removeItem('wv_user'); location.reload();" style="color:var(--error); text-decoration:none; font-size:11px; font-weight:700;">LOGOUT</a>`;
         }
     }
 
-async function loadPost() {
-    if (!formID) {
-        document.getElementById('f-body').innerHTML = "<h2>Invalid Link</h2>";
-        return;
+    // --- UTILITY: SMART YOUTUBE PARSER ---
+    function getYouTubeID(url) {
+        if (!url) return null;
+        const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=|shorts\/)([^#&?]*).*/;
+        const match = url.match(regExp);
+        return (match && match[2].length === 11) ? match[2] : null;
     }
 
-    try {
-        const res = await fetch(API);
-        const data = await res.json();
-
-        // 1. Find the form (Handling lowercase logic)
-        currentForm = data.find(f => {
-            const email = f.authoremail || f.authorEmail || "";
-            const emailUser = email ? email.split('@')[0].toLowerCase() : 'anonymous';
-            
-            const rawTitle = f.title || f.Title || "untitled";
-            const cleanTitle = rawTitle.toLowerCase()
-                .replace(/[^\w\s]|_/g, "") 
-                .replace(/\s+/g, "");        
-            
-            const generatedID = `${emailUser}-${cleanTitle}`;
-            return generatedID === formID.toLowerCase();
-        });
-
-        if (currentForm) {
-            // 2. Set Basic Info
-            document.title = `${currentForm.title || 'Form'} | WolfVox`;
-            document.getElementById('f-title').innerText = currentForm.title || "Untitled";
-            document.getElementById('f-date').innerText = currentForm.date || "Published Recently";
-            document.getElementById('f-likes').innerText = currentForm.likes || 0;
-
-            // 3. Build Content (Image, Video, Link)
-            let contentHTML = `<div>${currentForm.content || ''}</div>`;
-            
-            // Image Logic
-            if (currentForm.image) {
-                contentHTML += `
-                    <div style="margin-top:20px;">
-                        <img src="${currentForm.image}" style="width:100%; border-radius:8px; border:1px solid var(--border);">
-                        <a href="${currentForm.image}" download class="download-btn" style="display:block; margin-top:10px; text-decoration:none; color:var(--accent); font-size:13px;">
-                            Download Image 📥
-                        </a>
-                    </div>`;
-            }
-            
-            // Video Logic
-            if (currentForm.video) {
-                let vID = currentForm.video.includes("v=") ? currentForm.video.split("v=")[1].split("&")[0] : currentForm.video.split("/").pop();
-                contentHTML += `
-                    <div class="video-container" style="margin-top:20px;">
-                        <iframe src="https://www.youtube.com/embed/${vID}" frameborder="0" allowfullscreen style="width:100%; aspect-ratio:16/9; border-radius:8px;"></iframe>
-                    </div>`;
-            }
-
-            // External Link Logic
-            if (currentForm.link) {
-                contentHTML += `
-                    <div style="margin-top:20px; padding:15px; background:rgba(255,255,255,0.05); border-radius:8px; border:1px solid var(--border);">
-                        <span style="font-size:12px; color:gray;">Attached Link:</span><br>
-                        <a href="${currentForm.link}" target="_blank" style="color:var(--accent); word-break:break-all;">${currentForm.link}</a>
-                    </div>`;
-            }
-            
-            document.getElementById('f-body').innerHTML = contentHTML;
-
-            // 4. Author Info
-            const authorImg = currentForm.authorimg || 'https://ui-avatars.com/api/?name=?';
-            const authorName = currentForm.authorname || 'Anonymous Wolf';
-            const authorEmail = currentForm.authoremail || 'anon@wolfvox.co';
-
-            document.getElementById('author-info').innerHTML = `
-                <img src="${authorImg}" width="40" height="40" style="border-radius:50%; border:2px solid var(--accent); object-fit:cover;">
-                <div>
-                    <div style="font-weight:700;">${authorName}</div>
-                    <div style="font-size:11px; color:gray;">@${authorEmail.split('@')[0]}</div>
-                </div>`;
-        } else {
-            document.getElementById('f-body').innerHTML = "<h2>Form Not Found</h2><p>Check the ID or search manually.</p>";
+    // --- CORE LOADING LOGIC ---
+    async function loadPost() {
+        if (!formID) {
+            document.getElementById('f-body').innerHTML = "<h2 style='color:var(--error)'>Invalid Link</h2><p>No Form ID detected.</p>";
+            return;
         }
 
-    } catch (error) {
-        // THIS WAS THE MISSING PART CAUSING YOUR ERROR
-        console.error("Critical Error:", error);
-        document.getElementById('f-body').innerHTML = "<h2>Connection Error</h2><p>Could not reach the servers.</p>";
+        try {
+            const res = await fetch(API);
+            const data = await res.json();
+
+            // 1. ADVANCED MATCHING (Finds the form even if database case changes)
+            currentForm = data.find(f => {
+                const email = f.authoremail || f.authorEmail || "anonymous";
+                const emailUser = email.split('@')[0].toLowerCase();
+                
+                const title = f.title || f.Title || "untitled";
+                const cleanTitle = title.toLowerCase()
+                    .replace(/[^\w\s]|_/g, "") 
+                    .replace(/\s+/g, "");        
+                
+                return `${emailUser}-${cleanTitle}` === formID.toLowerCase();
+            });
+
+            if (currentForm) {
+                // 2. DATA EXTRACTION (Case-Insensitive fallback for all fields)
+                const fTitle = currentForm.title || currentForm.Title || "Untitled";
+                const fContent = currentForm.content || currentForm.Content || "";
+                const fImage = currentForm.image || currentForm.Image;
+                const fVideo = currentForm.video || currentForm.Video;
+                const fLink = currentForm.link || currentForm.Link;
+                const fDate = currentForm.date || currentForm.Date || "Published Recently";
+                const fLikes = currentForm.likes || 0;
+
+                // 3. UPDATE PAGE METADATA
+                document.title = `${fTitle} | WolfVox`;
+                document.getElementById('f-title').innerText = fTitle;
+                document.getElementById('f-date').innerText = fDate;
+                document.getElementById('f-likes').innerText = fLikes;
+
+                // 4. GENERATE CONTENT HTML
+                let contentHTML = `<div style="white-space: pre-wrap; word-break: break-word;">${fContent}</div>`;
+                
+                // IMAGE BLOCK (With Download Support)
+                if (fImage && fImage !== "null") {
+                    contentHTML += `
+                        <div style="margin-top:25px; border:1px solid var(--border); border-radius:12px; padding:10px; background:rgba(255,255,255,0.02);">
+                            <img src="${fImage}" alt="Post Image" onerror="this.style.display='none'" style="width:100%; border-radius:8px; border:1px solid var(--border);">
+                            <div style="margin-top:10px; display:flex; justify-content:space-between; align-items:center; padding:0 5px;">
+                                <span style="font-size:11px; color:var(--text-dim);"><i class="fa-solid fa-image"></i> Attached Media</span>
+                                <a href="${fImage}" target="_blank" download="WolfVox_Export" class="download-btn" style="color:var(--accent); text-decoration:none; font-size:13px; font-weight:bold;">
+                                    <i class="fa-solid fa-download"></i> DOWNLOAD
+                                </a>
+                            </div>
+                        </div>`;
+                }
+                
+                // VIDEO BLOCK (Smart YouTube Embed)
+                const videoID = getYouTubeID(fVideo);
+                if (videoID) {
+                    contentHTML += `
+                        <div class="video-container" style="margin-top:25px; border:1px solid var(--border); box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+                            <iframe src="https://www.youtube.com/embed/${videoID}" frameborder="0" allowfullscreen></iframe>
+                        </div>`;
+                }
+
+                // LINK BLOCK (Professional Resource Card)
+                if (fLink && fLink !== "null") {
+                    contentHTML += `
+                        <div style="margin-top:25px; padding:15px; background:rgba(122, 108, 255, 0.08); border-radius:8px; border:1px solid var(--accent); display:flex; align-items:center; gap:15px;">
+                            <i class="fa-solid fa-link" style="color:var(--accent); font-size:20px;"></i>
+                            <div style="flex:1; overflow:hidden;">
+                                <div style="font-size:10px; color:var(--accent); font-weight:800; text-transform:uppercase; letter-spacing:1px;">Attached Resource</div>
+                                <a href="${fLink}" target="_blank" style="color:#fff; text-decoration:none; font-size:14px; font-weight:500; word-break:break-all; border-bottom:1px solid rgba(255,255,255,0.2);">${fLink}</a>
+                            </div>
+                        </div>`;
+                }
+                
+                document.getElementById('f-body').innerHTML = contentHTML;
+
+                // 5. AUTHOR INFO (Handling lowercase names from Supabase)
+                const aName = currentForm.authorname || currentForm.authorName || "Anonymous Wolf";
+                const aImg = currentForm.authorimg || currentForm.authorImg || 'https://ui-avatars.com/api/?name=?';
+                const aEmail = currentForm.authoremail || currentForm.authorEmail || 'anon@wolfvox.co';
+
+                document.getElementById('author-info').innerHTML = `
+                    <img src="${aImg}" width="42" height="42" style="border-radius:50%; border:2px solid var(--accent); object-fit:cover; background:#000;">
+                    <div>
+                        <div style="font-weight:700; font-size:15px;">${aName}</div>
+                        <div style="font-size:11px; color:var(--text-dim);">@${aEmail.split('@')[0]}</div>
+                    </div>`;
+            } else {
+                document.getElementById('f-body').innerHTML = `
+                    <div style="text-align:center; padding:40px;">
+                        <i class="fa-solid fa-circle-exclamation" style="font-size:48px; color:var(--error); margin-bottom:15px;"></i>
+                        <h2>Form Not Found</h2>
+                        <p style="color:var(--text-dim)">The link might be broken or the form was deleted.</p>
+                        <button class="FeedBackBtn" onclick="location.href='index.html'" style="margin-top:20px;">Back to Hub</button>
+                    </div>`;
+            }
+        } catch (e) {
+            console.error("Critical WolfVox Error:", e);
+            document.getElementById('f-body').innerHTML = "<h2>Server Connection Lost</h2><p>WolfVox backend is currently unreachable. Please try again later.</p>";
+        }
     }
-}
+
     async function interact(type) {
         if (!user) return openAuth();
         try {
@@ -279,16 +314,31 @@ async function loadPost() {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                    title: currentForm.title,
-                    authorEmail: currentForm.authorEmail,
+                    id: currentForm.id, // Use Database ID for better tracking
+                    title: currentForm.title || currentForm.Title,
+                    authorEmail: currentForm.authoremail || currentForm.authorEmail,
                     voterEmail: user.email,
                     type: type
                 })
             });
-            if (res.ok) alert(type === 'like' ? "Liked!" : "Reported.");
-        } catch (e) { alert("Action failed."); }
+            if (res.ok) {
+                alert(type === 'like' ? "❤️ Form Liked!" : "🚩 Report Submitted.");
+                if(type === 'like') {
+                    const l = document.getElementById('f-likes');
+                    l.innerText = parseInt(l.innerText) + 1;
+                }
+            }
+        } catch (e) { alert("Interaction failed. Server might be sleeping."); }
     }
 
+    function shareForm() {
+        const url = window.location.href;
+        navigator.clipboard.writeText(url).then(() => {
+            alert("Link copied to clipboard! Share it with your pack. 🐺");
+        });
+    }
+
+    // --- RUN ---
     updateNav();
     loadPost();
 </script>
