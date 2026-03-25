@@ -198,17 +198,25 @@ const data = await res.json();
 console.log("DATA FROM DATABASE:", data); // <--- ADD THIS
 console.log("LOOKING FOR ID:", formID);    // <--- ADD THIS
 
-        currentForm = data.find(f => {
-            // FIX: Use 'f.authoremail' lowercase and handle potential undefined
-            const emailUser = (f.authoremail || 'anonymous').split('@')[0].toLowerCase();
-            
-            // FIX: Ensure 'f.title' exists before calling .toLowerCase()
-            const cleanTitle = (f.title || "untitled").toLowerCase()
-                .replace(/[^\w\s]|_/g, "") 
-                .replace(/\s+/g, "");        
-            
-            return `${emailUser}-${cleanTitle}` === formID.toLowerCase();
-        });
+// EXACT MATCHING LOGIC
+currentForm = data.find(f => {
+    // 1. Get the email prefix (handle null/undefined)
+    const email = f.authoremail || f.authorEmail || "";
+    const emailUser = email ? email.split('@')[0].toLowerCase() : 'anonymous';
+    
+    // 2. Clean the title exactly like the Hub does
+    const rawTitle = f.title || f.Title || "untitled";
+    const cleanTitle = rawTitle.toLowerCase()
+        .replace(/[^\w\s]|_/g, "") 
+        .replace(/\s+/g, "");        
+    
+    const generatedID = `${emailUser}-${cleanTitle}`;
+    
+    // DEBUG: This will show you exactly what the script is comparing
+    console.log(`Comparing: ${generatedID} VS ${formID.toLowerCase()}`);
+    
+    return generatedID === formID.toLowerCase();
+});
 
         if (currentForm) {
             document.title = `${currentForm.title || 'Form'} | WolfVox`;
