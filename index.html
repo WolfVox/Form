@@ -193,8 +193,10 @@
     }
 
     try {
-        const res = await fetch(API);
-        const data = await res.json();
+const res = await fetch(API);
+const data = await res.json();
+console.log("DATA FROM DATABASE:", data); // <--- ADD THIS
+console.log("LOOKING FOR ID:", formID);    // <--- ADD THIS
 
         currentForm = data.find(f => {
             // FIX: Use 'f.authoremail' lowercase and handle potential undefined
