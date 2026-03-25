@@ -218,23 +218,63 @@ currentForm = data.find(f => {
     return generatedID === formID.toLowerCase();
 });
 
-        if (currentForm) {
-            document.title = `${currentForm.title || 'Form'} | WolfVox`;
-            document.getElementById('f-title').innerText = currentForm.title || "Untitled";
-            document.getElementById('f-date').innerText = currentForm.date || "Published Recently";
-            document.getElementById('f-likes').innerText = currentForm.likes || 0;
+if (currentForm) {
+    document.title = `${currentForm.title || 'Form'} | WolfVox`;
+    document.getElementById('f-title').innerText = currentForm.title || "Untitled";
+    document.getElementById('f-date').innerText = currentForm.date || "Published Recently";
+    document.getElementById('f-likes').innerText = currentForm.likes || 0;
 
-            let contentHTML = `<div>${currentForm.content || ''}</div>`;
-            
-            // Handle image and video (ensure these are lowercase in DB too!)
-            if(currentForm.image) {
-                contentHTML += `<img src="${currentForm.image}" style="width:100%; border-radius:8px; margin-top:20px; border:1px solid var(--border);">`;
-            }
-            
-            if(currentForm.video) {
-                let vID = currentForm.video.includes("v=") ? currentForm.video.split("v=")[1].split("&")[0] : currentForm.video.split("/").pop();
-                contentHTML += `<div class="video-container"><iframe src="https://www.youtube.com/embed/${vID}" frameborder="0" allowfullscreen></iframe></div>`;
-            }
+    // 1. Build Content
+    let contentHTML = `<div>${currentForm.content || ''}</div>`;
+    
+    // 2. Handle Image (Lowercase 'image' from your Supabase log)
+    if (currentForm.image) {
+        contentHTML += `
+            <div style="margin-top:20px;">
+                <img src="${currentForm.image}" style="width:100%; border-radius:8px; border:1px solid var(--border);">
+                <a href="${currentForm.image}" download class="download-btn" style="display:block; margin-top:10px; text-decoration:none; color:var(--accent); font-size:13px;">
+                    Download Image 📥
+                </a>
+            </div>`;
+    }
+    
+    // 3. Handle Video (Lowercase 'video')
+    if (currentForm.video) {
+        let vID = "";
+        if (currentForm.video.includes("v=")) {
+            vID = currentForm.video.split("v=")[1].split("&")[0];
+        } else {
+            vID = currentForm.video.split("/").pop();
+        }
+        contentHTML += `
+            <div class="video-container" style="margin-top:20px;">
+                <iframe src="https://www.youtube.com/embed/${vID}" frameborder="0" allowfullscreen style="width:100%; aspect-ratio:16/9; border-radius:8px;"></iframe>
+            </div>`;
+    }
+
+    // 4. Handle External Link (Lowercase 'link')
+    if (currentForm.link) {
+        contentHTML += `
+            <div style="margin-top:20px; padding:15px; background:var(--bg-alt); border-radius:8px; border:1px solid var(--border);">
+                <span style="font-size:12px; color:var(--text-dim);">Attached Link:</span><br>
+                <a href="${currentForm.link}" target="_blank" style="color:var(--accent); word-break:break-all;">${currentForm.link}</a>
+            </div>`;
+    }
+    
+    document.getElementById('f-body').innerHTML = contentHTML;
+
+    // 5. Author Info (Using lowercase authorimg, authorname, authoremail)
+    const authorImg = currentForm.authorimg || 'https://ui-avatars.com/api/?name=?';
+    const authorName = currentForm.authorname || 'Anonymous Wolf';
+    const authorEmail = currentForm.authoremail || 'anon@wolfvox.co';
+
+    document.getElementById('author-info').innerHTML = `
+        <img src="${authorImg}" width="40" height="40" style="border-radius:50%; border:2px solid var(--accent); object-fit:cover;">
+        <div>
+            <div style="font-weight:700;">${authorName}</div>
+            <div style="font-size:11px; color:var(--text-dim);">@${authorEmail.split('@')[0]}</div>
+        </div>`;
+}
             
             document.getElementById('f-body').innerHTML = contentHTML;
 
