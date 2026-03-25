@@ -186,118 +186,92 @@
         }
     }
 
-    async function loadPost() {
+async function loadPost() {
     if (!formID) {
         document.getElementById('f-body').innerHTML = "<h2>Invalid Link</h2>";
         return;
     }
 
     try {
-const res = await fetch(API);
-const data = await res.json();
-console.log("DATA FROM DATABASE:", data); // <--- ADD THIS
-console.log("LOOKING FOR ID:", formID);    // <--- ADD THIS
+        const res = await fetch(API);
+        const data = await res.json();
 
-// EXACT MATCHING LOGIC
-currentForm = data.find(f => {
-    // 1. Get the email prefix (handle null/undefined)
-    const email = f.authoremail || f.authorEmail || "";
-    const emailUser = email ? email.split('@')[0].toLowerCase() : 'anonymous';
-    
-    // 2. Clean the title exactly like the Hub does
-    const rawTitle = f.title || f.Title || "untitled";
-    const cleanTitle = rawTitle.toLowerCase()
-        .replace(/[^\w\s]|_/g, "") 
-        .replace(/\s+/g, "");        
-    
-    const generatedID = `${emailUser}-${cleanTitle}`;
-    
-    // DEBUG: This will show you exactly what the script is comparing
-    console.log(`Comparing: ${generatedID} VS ${formID.toLowerCase()}`);
-    
-    return generatedID === formID.toLowerCase();
-});
+        // 1. Find the form (Handling lowercase logic)
+        currentForm = data.find(f => {
+            const email = f.authoremail || f.authorEmail || "";
+            const emailUser = email ? email.split('@')[0].toLowerCase() : 'anonymous';
+            
+            const rawTitle = f.title || f.Title || "untitled";
+            const cleanTitle = rawTitle.toLowerCase()
+                .replace(/[^\w\s]|_/g, "") 
+                .replace(/\s+/g, "");        
+            
+            const generatedID = `${emailUser}-${cleanTitle}`;
+            return generatedID === formID.toLowerCase();
+        });
 
-if (currentForm) {
-    document.title = `${currentForm.title || 'Form'} | WolfVox`;
-    document.getElementById('f-title').innerText = currentForm.title || "Untitled";
-    document.getElementById('f-date').innerText = currentForm.date || "Published Recently";
-    document.getElementById('f-likes').innerText = currentForm.likes || 0;
+        if (currentForm) {
+            // 2. Set Basic Info
+            document.title = `${currentForm.title || 'Form'} | WolfVox`;
+            document.getElementById('f-title').innerText = currentForm.title || "Untitled";
+            document.getElementById('f-date').innerText = currentForm.date || "Published Recently";
+            document.getElementById('f-likes').innerText = currentForm.likes || 0;
 
-    // 1. Build Content
-    let contentHTML = `<div>${currentForm.content || ''}</div>`;
-    
-    // 2. Handle Image (Lowercase 'image' from your Supabase log)
-    if (currentForm.image) {
-        contentHTML += `
-            <div style="margin-top:20px;">
-                <img src="${currentForm.image}" style="width:100%; border-radius:8px; border:1px solid var(--border);">
-                <a href="${currentForm.image}" download class="download-btn" style="display:block; margin-top:10px; text-decoration:none; color:var(--accent); font-size:13px;">
-                    Download Image 📥
-                </a>
-            </div>`;
-    }
-    
-    // 3. Handle Video (Lowercase 'video')
-    if (currentForm.video) {
-        let vID = "";
-        if (currentForm.video.includes("v=")) {
-            vID = currentForm.video.split("v=")[1].split("&")[0];
-        } else {
-            vID = currentForm.video.split("/").pop();
-        }
-        contentHTML += `
-            <div class="video-container" style="margin-top:20px;">
-                <iframe src="https://www.youtube.com/embed/${vID}" frameborder="0" allowfullscreen style="width:100%; aspect-ratio:16/9; border-radius:8px;"></iframe>
-            </div>`;
-    }
+            // 3. Build Content (Image, Video, Link)
+            let contentHTML = `<div>${currentForm.content || ''}</div>`;
+            
+            // Image Logic
+            if (currentForm.image) {
+                contentHTML += `
+                    <div style="margin-top:20px;">
+                        <img src="${currentForm.image}" style="width:100%; border-radius:8px; border:1px solid var(--border);">
+                        <a href="${currentForm.image}" download class="download-btn" style="display:block; margin-top:10px; text-decoration:none; color:var(--accent); font-size:13px;">
+                            Download Image 📥
+                        </a>
+                    </div>`;
+            }
+            
+            // Video Logic
+            if (currentForm.video) {
+                let vID = currentForm.video.includes("v=") ? currentForm.video.split("v=")[1].split("&")[0] : currentForm.video.split("/").pop();
+                contentHTML += `
+                    <div class="video-container" style="margin-top:20px;">
+                        <iframe src="https://www.youtube.com/embed/${vID}" frameborder="0" allowfullscreen style="width:100%; aspect-ratio:16/9; border-radius:8px;"></iframe>
+                    </div>`;
+            }
 
-    // 4. Handle External Link (Lowercase 'link')
-    if (currentForm.link) {
-        contentHTML += `
-            <div style="margin-top:20px; padding:15px; background:var(--bg-alt); border-radius:8px; border:1px solid var(--border);">
-                <span style="font-size:12px; color:var(--text-dim);">Attached Link:</span><br>
-                <a href="${currentForm.link}" target="_blank" style="color:var(--accent); word-break:break-all;">${currentForm.link}</a>
-            </div>`;
-    }
-    
-    document.getElementById('f-body').innerHTML = contentHTML;
-
-    // 5. Author Info (Using lowercase authorimg, authorname, authoremail)
-    const authorImg = currentForm.authorimg || 'https://ui-avatars.com/api/?name=?';
-    const authorName = currentForm.authorname || 'Anonymous Wolf';
-    const authorEmail = currentForm.authoremail || 'anon@wolfvox.co';
-
-    document.getElementById('author-info').innerHTML = `
-        <img src="${authorImg}" width="40" height="40" style="border-radius:50%; border:2px solid var(--accent); object-fit:cover;">
-        <div>
-            <div style="font-weight:700;">${authorName}</div>
-            <div style="font-size:11px; color:var(--text-dim);">@${authorEmail.split('@')[0]}</div>
-        </div>`;
-}
+            // External Link Logic
+            if (currentForm.link) {
+                contentHTML += `
+                    <div style="margin-top:20px; padding:15px; background:rgba(255,255,255,0.05); border-radius:8px; border:1px solid var(--border);">
+                        <span style="font-size:12px; color:gray;">Attached Link:</span><br>
+                        <a href="${currentForm.link}" target="_blank" style="color:var(--accent); word-break:break-all;">${currentForm.link}</a>
+                    </div>`;
+            }
             
             document.getElementById('f-body').innerHTML = contentHTML;
 
-            // FIX: Using all lowercase for author details
+            // 4. Author Info
             const authorImg = currentForm.authorimg || 'https://ui-avatars.com/api/?name=?';
             const authorName = currentForm.authorname || 'Anonymous Wolf';
-            const authorHandle = (currentForm.authoremail || 'anon@wolf').split('@')[0];
+            const authorEmail = currentForm.authoremail || 'anon@wolfvox.co';
 
             document.getElementById('author-info').innerHTML = `
-                <img src="${authorImg}" width="40" height="40" style="border-radius:50%; border:2px solid var(--accent);">
+                <img src="${authorImg}" width="40" height="40" style="border-radius:50%; border:2px solid var(--accent); object-fit:cover;">
                 <div>
                     <div style="font-weight:700;">${authorName}</div>
-                    <div style="font-size:11px; color:var(--text-dim);">@${authorHandle}</div>
+                    <div style="font-size:11px; color:gray;">@${authorEmail.split('@')[0]}</div>
                 </div>`;
         } else {
-            document.getElementById('f-body').innerHTML = "<h2>Form Not Found</h2><p>Double check the ID or search for the form manually.</p>";
+            document.getElementById('f-body').innerHTML = "<h2>Form Not Found</h2><p>Check the ID or search manually.</p>";
         }
-    } catch (e) {
-        console.error("Frontend Error:", e);
-        document.getElementById('f-body').innerHTML = "<h2>Error</h2><p>Failed to connect to WolfVox Servers.</p>";
+
+    } catch (error) {
+        // THIS WAS THE MISSING PART CAUSING YOUR ERROR
+        console.error("Critical Error:", error);
+        document.getElementById('f-body').innerHTML = "<h2>Connection Error</h2><p>Could not reach the servers.</p>";
     }
 }
-
     async function interact(type) {
         if (!user) return openAuth();
         try {
