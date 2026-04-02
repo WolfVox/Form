@@ -106,8 +106,8 @@
     </div>
     <div style="flex-grow: 1;"></div>
     <div class="nav-links" id="navAuthArea" style="font-size: 14px; display: flex; gap: 15px; align-items: center;">
-        <a href="javascript:void(0)" onclick="openAuth()" style="color:white; text-decoration:none;">Sign In</a>
-        <button onclick="handlePublish()" class="FeedBackBtn">Publish</button>
+        <a href="javascript:void(0)" onclick="window.location.href='https://login.wolfvox.me'" style="color:white; text-decoration:none;">Sign In</a>
+        <button onclick="window.location.href='https://login.wolfvox.me'" class="FeedBackBtn">Publish</button>
     </div>
 </nav>
 
@@ -163,43 +163,90 @@
     const API = "https://backhand-forms.onrender.com/api/forms";
     const urlParams = new URLSearchParams(window.location.search);
     const formID = urlParams.get('id');
-    let user = JSON.parse(localStorage.getItem('wv_user')) || null;
     let currentForm = null;
 
-    // --- HELPER: GET DATA REGARDLESS OF CASE ---
-    // This looks for 'image', 'Image', 'IMAGE', etc.
+    /* --- SHARED AUTH LOGIC (Cookies) --- */
+    function getCookie(name) {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) return decodeURIComponent(parts.pop().split(';').shift());
+        return null;
+    }
+
+    function setAuthCookie(data) {
+        // Sets cookie for the entire wolfvox.me domain (if applicable) or current path
+        const userData = JSON.stringify(data);
+        document.cookie = `wv_user=${encodeURIComponent(userData)}; path=/; max-age=86400; SameSite=Lax`;
+    }
+
+    function logout() {
+        document.cookie = "wv_user=; Max-Age=-99999999; path=/;";
+        localStorage.removeItem('wv_user'); // Cleanup old method
+        location.reload();
+    }
+
+    // Initialize user from Cookie or LocalStorage
+    let user = null;
+    const cookieData = getCookie('wv_user');
+    if (cookieData) {
+        user = JSON.parse(cookieData);
+    } else {
+        user = JSON.parse(localStorage.getItem('wv_user'));
+    }
+
+    /* --- OAUTH FIX --- */
+    function handleGoogleLogin(response) {
+        try {
+            // Decode the JWT from Google
+            const payload = JSON.parse(atob(response.credential.split('.')[1]));
+            
+            const newUser = {
+                name: payload.name, 
+                email: payload.email, 
+                img: payload.picture
+            };
+
+            // Save to both for maximum compatibility across your pages
+            setAuthCookie(newUser);
+            localStorage.setItem('wv_user', JSON.stringify(newUser));
+
+            user = newUser;
+            closeAuth();
+            updateNav();
+            
+            // Optional: Reload if you want to refresh the "Like" buttons state immediately
+            alert(`Welcome back, ${user.name}!`);
+            location.reload(); 
+        } catch (e) {
+            console.error("Login Error:", e);
+            alert("Failed to sign in. Please try again.");
+        }
+    }
+
+    /* --- UI LOGIC --- */
+    function openAuth() { document.getElementById('authModal').style.display='flex'; }
+    function closeAuth() { document.getElementById('authModal').style.display='none'; }
+    function handlePublish() { if(!user) openAuth(); else window.location.href='Create.html'; }
+
+    function updateNav() {
+        const navAuth = document.getElementById('navAuthArea');
+        if(user && navAuth) {
+            navAuth.innerHTML = `
+                <div style="display:flex; align-items:center; gap:10px; background:var(--card-bg); padding:5px 12px; border-radius:20px; border:1px solid var(--border);">
+                    <span style="font-size:12px; font-weight:600;">${user.name}</span>
+                    <img src="${user.img}" width="24" height="24" style="border-radius:50%; border:1px solid var(--accent);">
+                </div>
+                <a href="javascript:void(0)" onclick="logout()" style="color:var(--error); text-decoration:none; font-size:11px; font-weight:700; margin-left:10px;">LOGOUT</a>`;
+        }
+    }
+
+    /* --- CONTENT LOADING --- */
     const getField = (obj, fieldName) => {
         if (!obj) return null;
         const keys = Object.keys(obj);
         const foundKey = keys.find(k => k.toLowerCase() === fieldName.toLowerCase());
         return foundKey ? obj[foundKey] : null;
     };
-
-    function openAuth() { document.getElementById('authModal').style.display='flex'; }
-    function closeAuth() { document.getElementById('authModal').style.display='none'; }
-    
-    function handleGoogleLogin(response) {
-        const payload = JSON.parse(atob(response.credential.split('.')[1]));
-        localStorage.setItem('wv_user', JSON.stringify({
-            name: payload.name, 
-            email: payload.email, 
-            img: payload.picture
-        }));
-        location.reload();
-    }
-
-    function handlePublish() { if(!user) openAuth(); else window.location.href='Create.html'; }
-
-    function updateNav() {
-        if(user && document.getElementById('navAuthArea')) {
-            document.getElementById('navAuthArea').innerHTML = `
-                <div style="display:flex; align-items:center; gap:10px; background:var(--card-bg); padding:5px 12px; border-radius:20px; border:1px solid var(--border);">
-                    <span style="font-size:12px; font-weight:600;">${user.name}</span>
-                    <img src="${user.img}" width="24" height="24" style="border-radius:50%; border:1px solid var(--accent);">
-                </div>
-                <a href="#" onclick="localStorage.removeItem('wv_user'); location.reload();" style="color:var(--error); text-decoration:none; font-size:11px; font-weight:700; margin-left:10px;">LOGOUT</a>`;
-        }
-    }
 
     function getYouTubeID(url) {
         if (!url || url === "null") return null;
@@ -218,7 +265,6 @@
             const res = await fetch(API);
             const data = await res.json();
 
-            // 1. MATCHING LOGIC
             currentForm = data.find(f => {
                 const email = getField(f, 'authoremail') || "anonymous";
                 const emailUser = email.split('@')[0].toLowerCase();
@@ -228,7 +274,6 @@
             });
 
             if (currentForm) {
-                // 2. EXTRACT ALL FIELDS CASE-INSENSITIVELY
                 const fTitle = getField(currentForm, 'title') || "Untitled";
                 const fContent = getField(currentForm, 'content') || "";
                 const fImage = getField(currentForm, 'image');
@@ -237,7 +282,6 @@
                 const fDate = getField(currentForm, 'date') || "Recently";
                 const fLikes = getField(currentForm, 'likes') || 0;
 
-                // 3. SET BASIC UI
                 document.title = `${fTitle} | WolfVox`;
                 document.getElementById('f-title').innerText = fTitle;
                 document.getElementById('f-date').innerText = fDate;
@@ -245,21 +289,19 @@
 
                 let contentHTML = `<div style="white-space: pre-wrap;">${fContent}</div>`;
 
-                // 4. IMAGE RENDER (Checks if URL is valid)
                 if (fImage && fImage !== "null" && fImage.length > 5) {
                     contentHTML += `
                         <div style="margin-top:25px; border:1px solid var(--border); border-radius:12px; padding:10px; background:rgba(255,255,255,0.02);">
                             <img src="${fImage}" style="width:100%; border-radius:8px; border:1px solid var(--border);" onerror="this.parentElement.style.display='none'">
                             <div style="margin-top:10px; display:flex; justify-content:space-between; align-items:center;">
                                 <span style="font-size:11px; color:var(--text-dim);">Attached Media</span>
-                                <a href="${fImage}" target="_blank" download class="FeedBackBtn" style="text-decoration:none; font-size:12px; padding:5px 15px;">
-                                    <i class="fa-solid fa-download"></i> Download
+                                <a href="${fImage}" target="_blank" class="FeedBackBtn" style="text-decoration:none; font-size:12px; padding:5px 15px;">
+                                    <i class="fa-solid fa-expand"></i> View Original
                                 </a>
                             </div>
                         </div>`;
                 }
 
-                // 5. VIDEO RENDER
                 const videoID = getYouTubeID(fVideo);
                 if (videoID) {
                     contentHTML += `
@@ -268,7 +310,6 @@
                         </div>`;
                 }
 
-                // 6. LINK RENDER
                 if (fLink && fLink !== "null" && fLink.length > 5) {
                     contentHTML += `
                         <div style="margin-top:25px; padding:15px; background:rgba(122, 108, 255, 0.1); border-radius:8px; border:1px solid var(--accent); display:flex; align-items:center; gap:12px;">
@@ -279,7 +320,6 @@
 
                 document.getElementById('f-body').innerHTML = contentHTML;
 
-                // 7. AUTHOR UI
                 const aName = getField(currentForm, 'authorname') || "Anonymous Wolf";
                 const aImg = getField(currentForm, 'authorimg') || 'https://ui-avatars.com/api/?name=?';
                 const aEmail = getField(currentForm, 'authoremail') || 'anon@wolfvox.co';
@@ -315,11 +355,14 @@
             });
             alert("Action Recorded!");
             if(type === 'like') location.reload();
-        } catch (e) { alert("Error."); }
+        } catch (e) { alert("Error recording interaction."); }
     }
 
-    updateNav();
-    loadPost();
+    // Run on startup
+    window.onload = () => {
+        updateNav();
+        loadPost();
+    };
 </script>
 </body>
 </html>
